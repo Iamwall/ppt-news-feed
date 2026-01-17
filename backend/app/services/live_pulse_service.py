@@ -47,6 +47,7 @@ class LivePulseService:
         breaking_only: bool = False,
         passed_triage_only: bool = True,
         min_freshness: float = 0.0,
+        validated_only: bool = False,
     ) -> List[Paper]:
         """Get live feed sorted by breaking status + freshness.
 
@@ -57,7 +58,9 @@ class LivePulseService:
             since: Only return items newer than this time
             breaking_only: Only return breaking news
             passed_triage_only: Only return items that passed triage
+            passed_triage_only: Only return items that passed triage
             min_freshness: Minimum freshness score (0.0-1.0)
+            validated_only: Only return items from validated sources
 
         Returns:
             List of papers sorted by importance
@@ -91,6 +94,10 @@ class LivePulseService:
                     Paper.freshness_score == None
                 )
             )
+
+        # Filter by validated source
+        if validated_only:
+            conditions.append(Paper.is_validated_source == True)
 
         if conditions:
             query = query.where(and_(*conditions))

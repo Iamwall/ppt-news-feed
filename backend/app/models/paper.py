@@ -1,7 +1,7 @@
 """Paper database model."""
 from datetime import datetime
 from typing import Optional, List
-from sqlalchemy import String, Text, Float, Integer, DateTime, JSON, ForeignKey
+from sqlalchemy import String, Text, Float, Integer, DateTime, JSON, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -65,6 +65,7 @@ class Paper(Base):
     # Credibility scoring
     credibility_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     credibility_breakdown: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    is_validated_source: Mapped[bool] = mapped_column(Boolean, default=False)
     
     # AI-generated content
     summary_headline: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)

@@ -16,7 +16,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { useBranding } from '../contexts/BrandingContext'
-import api from '../api/client'
+import { api } from '../api/client'
 
 interface DigestSchedule {
   id: number

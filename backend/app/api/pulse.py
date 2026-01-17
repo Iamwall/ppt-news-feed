@@ -31,6 +31,7 @@ class PaperPulseResponse(BaseModel):
     freshness_score: Optional[float] = None
     triage_status: Optional[str] = None
     triage_score: Optional[float] = None
+    is_validated_source: Optional[bool] = False
 
     # Timestamps
     fetched_at: datetime
@@ -73,6 +74,7 @@ def paper_to_response(paper: Paper) -> PaperPulseResponse:
         triage_status=paper.triage_status,
         triage_score=paper.triage_score,
         fetched_at=paper.fetched_at,
+        is_validated_source=paper.is_validated_source or False,
     )
 
 
@@ -84,6 +86,7 @@ async def get_live_feed(
     breaking_only: bool = Query(False, description="Only return breaking news"),
     passed_triage_only: bool = Query(True, description="Only return items that passed triage"),
     min_freshness: float = Query(0.0, ge=0.0, le=1.0, description="Minimum freshness score"),
+    validated_only: bool = Query(False, description="Only return items from validated sources"),
     db: AsyncSession = Depends(get_db)
 ):
     """Get the live pulse feed.
@@ -104,6 +107,7 @@ async def get_live_feed(
         breaking_only=breaking_only,
         passed_triage_only=passed_triage_only,
         min_freshness=min_freshness,
+        validated_only=validated_only,
     )
 
     return [paper_to_response(p) for p in papers]

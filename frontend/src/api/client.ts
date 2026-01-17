@@ -125,14 +125,44 @@ export const settingsApi = {
 export const sourcesApi = {
   list: () => api.get('sources/'),
 
-  create: (data: { name: string; url: string; description?: string }) =>
-    api.post('sources/', data),
+  create: (data: { 
+    name: string
+    url: string
+    description?: string
+    credibility_base_score?: number
+    is_peer_reviewed?: boolean
+    is_validated?: boolean
+    verification_method?: string
+  }) => api.post('sources/custom', data),
 
-  update: (id: number, data: { name?: string; url?: string; description?: string; is_active?: boolean }) =>
-    api.put(`sources/${id}`, data),
+  update: (id: number, data: { 
+    name?: string
+    url?: string
+    description?: string
+    is_active?: boolean
+    credibility_base_score?: number
+    is_peer_reviewed?: boolean
+    is_validated?: boolean
+    verification_method?: string
+  }) => api.put(`sources/custom/${id}`, data),
 
-  delete: (id: number) => api.delete(`sources/${id}`),
+  delete: (id: number) => api.delete(`sources/custom/${id}`),
 
-  test: (url: string) => api.post('sources/test', { url }),
+  test: (id: number) => api.post(`sources/custom/${id}/test`),
+}
+
+export interface PulsePaper {
+  id: number
+  title: string
+  source: string
+  url?: string
+  published_date?: string
+  is_breaking?: boolean
+  breaking_score?: number
+  freshness_score?: number
+  triage_status?: string
+  triage_score?: number
+  is_validated_source?: boolean
+  fetched_at: string
 }
 

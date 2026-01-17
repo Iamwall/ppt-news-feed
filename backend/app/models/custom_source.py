@@ -33,6 +33,8 @@ class CustomSource(Base):
     # Credibility
     credibility_base_score: Mapped[float] = mapped_column(Float, default=50.0)
     is_peer_reviewed: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_validated: Mapped[bool] = mapped_column(Boolean, default=False)
+    verification_method: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
     # Tracking
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -56,6 +58,8 @@ class CustomSource(Base):
             "isActive": self.is_active,
             "credibilityBaseScore": self.credibility_base_score,
             "isPeerReviewed": self.is_peer_reviewed,
+            "isValidated": self.is_validated,
+            "verificationMethod": self.verification_method,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
             "lastFetchedAt": self.last_fetched_at.isoformat() if self.last_fetched_at else None,
             "lastError": self.last_error,

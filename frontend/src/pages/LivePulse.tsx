@@ -15,7 +15,7 @@ import {
   BellOff,
 } from 'lucide-react'
 import { useBranding } from '../contexts/BrandingContext'
-import api from '../api/client'
+import { api } from '../api/client'
 
 interface PulsePaper {
   id: number
@@ -30,6 +30,7 @@ interface PulsePaper {
   freshness_score: number | null
   triage_status: string | null
   triage_score: number | null
+  is_validated_source?: boolean
   fetched_at: string
 }
 
@@ -46,6 +47,7 @@ export default function LivePulse() {
   const queryClient = useQueryClient()
   const { activeDomainId } = useBranding()
   const [breakingOnly, setBreakingOnly] = useState(false)
+  const [validatedOnly, setValidatedOnly] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [showBreakingAlert, setShowBreakingAlert] = useState(true)
   const lastFetchTime = useRef<string | null>(null)
@@ -56,7 +58,7 @@ export default function LivePulse() {
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ['pulse-feed', activeDomainId, breakingOnly],
+    queryKey: ['pulse-feed', activeDomainId, breakingOnly, validatedOnly],
     queryFn: async () => {
       const response = await api.get('/pulse/feed', {
         params: {
@@ -64,6 +66,7 @@ export default function LivePulse() {
           limit: 50,
           breaking_only: breakingOnly,
           passed_triage_only: true,
+          validated_only: validatedOnly,
         },
       })
       return response.data as PulsePaper[]
@@ -148,7 +151,8 @@ export default function LivePulse() {
       }
       lastFetchTime.current = new Date().toISOString()
     }
-  }, [breaking, showBreakingAlert])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [breaking])
 
   const formatTime = (dateStr: string | null) => {
     if (!dateStr) return 'Unknown'
@@ -327,6 +331,15 @@ export default function LivePulse() {
           />
           <span className="text-sm">Breaking only</span>
         </label>
+        <label className="flex items-center gap-2 ml-2">
+            <input
+                type="checkbox"
+                checked={validatedOnly}
+                onChange={(e) => setValidatedOnly(e.target.checked)}
+                className="rounded"
+            />
+            <span className="text-sm flex items-center gap-1">Validated only</span>
+        </label>
         <span className="text-gray-300">|</span>
         <span className="text-sm text-gray-500">
           Showing {feed?.length || 0} items
@@ -354,9 +367,15 @@ export default function LivePulse() {
                   <div className="flex items-center gap-2 mb-1">
                     {item.is_breaking && (
                       <span className="px-2 py-0.5 text-xs font-bold bg-red-600 text-white rounded">
-                        BREAKING
+                        BREAKING ({Math.round((item.breaking_score || 0) * 100)}%)
                       </span>
                     )}
+                    {item.is_validated_source && (
+                        <span className="px-2 py-0.5 text-xs font-bold bg-green-100 text-green-700 rounded border border-green-200">
+                            VALIDATED
+                        </span>
+                    )}
+
                     <span className="text-sm text-gray-500">{item.source}</span>
                     <span className="text-gray-300">•</span>
                     <span className="text-sm text-gray-500 flex items-center gap-1">

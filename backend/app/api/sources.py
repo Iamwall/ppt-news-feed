@@ -114,6 +114,8 @@ class CustomSourceCreate(BaseModel):
     description: Optional[str] = None
     credibility_base_score: float = 50.0
     is_peer_reviewed: bool = False
+    is_validated: bool = False
+    verification_method: Optional[str] = None
 
 
 class CustomSourceUpdate(BaseModel):
@@ -124,6 +126,8 @@ class CustomSourceUpdate(BaseModel):
     credibility_base_score: Optional[float] = None
     is_peer_reviewed: Optional[bool] = None
     is_active: Optional[bool] = None
+    is_validated: Optional[bool] = None
+    verification_method: Optional[str] = None
 
 
 @router.get("/")
@@ -195,6 +199,8 @@ async def create_custom_source(
         description=data.description,
         credibility_base_score=data.credibility_base_score,
         is_peer_reviewed=data.is_peer_reviewed,
+        is_validated=data.is_validated,
+        verification_method=data.verification_method,
     )
 
     db.add(source)

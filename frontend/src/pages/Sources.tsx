@@ -24,6 +24,7 @@ interface Source {
   domains?: string[]
   isCustom: boolean
   isEnabled: boolean
+  is_validated?: boolean
 }
 
 interface SourcesResponse {
@@ -72,6 +73,18 @@ export default function Sources() {
     },
     onError: () => {
       toast.error('Failed to delete source')
+    },
+  })
+
+  const toggleValidationMutation = useMutation({
+    mutationFn: (args: { id: number; validated: boolean }) =>
+      sourcesApi.update(args.id, { is_validated: args.validated }),
+    onSuccess: () => {
+      toast.success('Source validation status updated')
+      queryClient.invalidateQueries({ queryKey: ['sources'] })
+    },
+    onError: () => {
+      toast.error('Failed to update validation status')
     },
   })
 
@@ -289,13 +302,34 @@ export default function Sources() {
                     <Rss className="w-4 h-4 text-science-400" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-ink-100">{source.name}</h3>
+                    <h3 className="font-medium text-ink-100 flex items-center gap-2">
+                        {source.name}
+                        {source.is_validated && (
+                            <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 bg-science-900/50 text-science-300 rounded border border-science-700/50">
+                                Validated
+                            </span>
+                        )}
+                    </h3>
                     <p className="text-xs text-ink-400">
                       {source.description || source.url}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-2 mr-2 cursor-pointer text-xs text-ink-400 hover:text-ink-200">
+                        <input
+                            type="checkbox"
+                            checked={!!source.is_validated}
+                            onChange={(e) => 
+                                toggleValidationMutation.mutate({ 
+                                    id: source.id as number, 
+                                    validated: e.target.checked 
+                                })
+                            }
+                            className="rounded bg-ink-900 border-ink-700 text-science-500 focus:ring-science-500/20"
+                        />
+                        <span>Verified</span>
+                    </label>
                   {source.url && (
                     <a
                       href={source.url}

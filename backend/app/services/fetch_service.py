@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from app.models.paper import Paper, Author
 from app.models.fetch_job import FetchJob, FetchStatus
+from app.models.custom_source import CustomSource
 from app.fetchers import get_fetcher, PaperData
 from app.services.triage_service import TriageService
 
@@ -212,6 +213,19 @@ class FetchService:
                 is_preprint=paper_data.is_preprint,
             )
 
+            # Check if source is validated
+            if paper_data.source == "custom" and hasattr(paper_data, "source_id") and paper_data.source_id:
+                # Need to check custom source status
+                try:
+                    result = await self.db.execute(
+                        select(CustomSource).where(CustomSource.source_id == paper_data.source_id)
+                    )
+                    source = result.scalar_one_or_none()
+                    if source and source.is_validated:
+                        paper.is_validated_source = True
+                except Exception as e:
+                    print(f"[Fetch Warning] Failed to check source validation: {e}")
+
             # Add authors
             for author_data in paper_data.authors:
                 author = Author(
@@ -243,6 +257,18 @@ class FetchService:
             paper.influential_citations = paper_data.influential_citations
         if paper_data.altmetric_score is not None:
             paper.altmetric_score = paper_data.altmetric_score
+        
+        # Check source validation update (in case source changed status)
+        if paper.source == "custom" and hasattr(paper_data, "source_id") and paper_data.source_id:
+             try:
+                 result = await self.db.execute(
+                     select(CustomSource).where(CustomSource.source_id == paper_data.source_id)
+                 )
+                 source = result.scalar_one_or_none()
+                 if source:
+                     paper.is_validated_source = source.is_validated
+             except Exception:
+                 pass
         
         await self.db.commit()
     
