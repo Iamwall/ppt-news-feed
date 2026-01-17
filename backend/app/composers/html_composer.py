@@ -3,10 +3,24 @@ from typing import Optional
 from jinja2 import Template
 
 from app.models.digest import Digest
+from app.core.config import settings
 
 
 class HTMLComposer:
     """Compose HTML newsletters from digests."""
+    
+    def __init__(self, base_url: str = "http://localhost:8000"):
+        """Initialize with base URL for images."""
+        self.base_url = base_url
+    
+    def _get_image_url(self, image_path: str) -> str:
+        """Convert relative image path to full URL."""
+        if not image_path:
+            return ""
+        if image_path.startswith("http"):
+            return image_path
+        # Image paths are like /static/images/xyz.png
+        return f"{self.base_url}{image_path}"
     
     async def compose(
         self,
@@ -31,7 +45,7 @@ class HTMLComposer:
                 "journal": paper.journal or "Unknown",
                 "authors": ", ".join(a.name for a in paper.authors[:3]) if paper.authors else "",
                 "url": paper.url or "#",
-                "image_path": paper.image_path or "",
+                "image_path": self._get_image_url(paper.image_path) if paper.image_path else "",
                 "tags": paper.tags or [],
                 "is_preprint": paper.is_preprint,
             })

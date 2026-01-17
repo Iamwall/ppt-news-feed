@@ -1,6 +1,6 @@
 """Newsletter generation and export API endpoints."""
 from typing import Literal
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, Request
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -26,10 +26,17 @@ def _get_digest_query(digest_id: int):
     ).where(Digest.id == digest_id)
 
 
+def _get_base_url(request: Request) -> str:
+    """Get the base URL of the current request."""
+    # Use request host and scheme
+    return f"{request.url.scheme}://{request.url.netloc}"
+
+
 @router.post("/{digest_id}/export")
 async def export_newsletter(
     digest_id: int,
     request: NewsletterExportRequest,
+    fastapi_request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """Export a digest as a newsletter in the specified format."""
@@ -42,8 +49,10 @@ async def export_newsletter(
     if digest.status != DigestStatus.COMPLETED:
         raise HTTPException(status_code=400, detail="Digest is not yet complete")
     
+    base_url = _get_base_url(fastapi_request)
+    
     if request.format == "html":
-        composer = HTMLComposer()
+        composer = HTMLComposer(base_url=base_url)
         content = await composer.compose(digest)
         return Response(
             content=content,
@@ -52,7 +61,7 @@ async def export_newsletter(
         )
     
     elif request.format == "pdf":
-        composer = PDFComposer()
+        composer = PDFComposer(base_url=base_url)
         pdf_path = await composer.compose(digest)
         return FileResponse(
             pdf_path,
@@ -76,6 +85,7 @@ async def export_newsletter(
 @router.get("/{digest_id}/preview")
 async def preview_newsletter(
     digest_id: int,
+    fastapi_request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """Get HTML preview of the newsletter."""
@@ -87,7 +97,8 @@ async def preview_newsletter(
         if not digest:
             raise HTTPException(status_code=404, detail="Digest not found")
         
-        composer = HTMLComposer()
+        base_url = _get_base_url(fastapi_request)
+        composer = HTMLComposer(base_url=base_url)
         content = await composer.compose(digest, for_preview=True)
         
         return Response(content=content, media_type="text/html")
@@ -103,6 +114,7 @@ async def preview_newsletter(
 async def send_newsletter(
     digest_id: int,
     recipients: list[str],
+    fastapi_request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """Send the newsletter via email."""
@@ -117,7 +129,8 @@ async def send_newsletter(
     if digest.status != DigestStatus.COMPLETED:
         raise HTTPException(status_code=400, detail="Digest is not yet complete")
     
-    composer = HTMLComposer()
+    base_url = _get_base_url(fastapi_request)
+    composer = HTMLComposer(base_url=base_url)
     html_content = await composer.compose(digest, for_email=True)
     
     email_service = EmailService()
