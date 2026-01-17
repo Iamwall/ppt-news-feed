@@ -74,14 +74,15 @@ export default function NewsletterEditor() {
     mutationFn: (format: 'html' | 'pdf' | 'markdown') => 
       newsletterApi.export(Number(id), format),
     onSuccess: (response, format) => {
-      const blob = new Blob([response.data], { 
-        type: format === 'pdf' ? 'application/pdf' : 'text/plain' 
-      })
+      // Response is already a blob
+      const blob = response.data as Blob
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `newsletter_${id}.${format === 'markdown' ? 'md' : format}`
+      document.body.appendChild(a)
       a.click()
+      document.body.removeChild(a)
       URL.revokeObjectURL(url)
       toast.success(`Exported as ${format.toUpperCase()}`)
     },

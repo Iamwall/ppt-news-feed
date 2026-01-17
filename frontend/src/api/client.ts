@@ -82,11 +82,14 @@ export const fetchApi = {
 export const newsletterApi = {
   export: (digestId: number, format: 'html' | 'pdf' | 'markdown') =>
     api.post(`/newsletters/${digestId}/export`, { format }, {
-      responseType: format === 'pdf' ? 'blob' : 'text',
+      responseType: 'blob',
     }),
   
   preview: (digestId: number) =>
-    api.get(`/newsletters/${digestId}/preview`),
+    api.get(`/newsletters/${digestId}/preview`, {
+      responseType: 'text',
+      transformResponse: [(data) => data],  // Prevent JSON parsing
+    }),
   
   send: (digestId: number, recipients: string[]) =>
     api.post(`/newsletters/${digestId}/send`, { recipients }),
