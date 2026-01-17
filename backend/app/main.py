@@ -1,12 +1,14 @@
 """Main FastAPI application entry point."""
 # Updated for summary infographics support
 import os
+import traceback
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.core.database import init_db
@@ -35,6 +37,19 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+# Global exception handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch all exceptions and return detailed error for debugging."""
+    error_detail = f"{type(exc).__name__}: {str(exc)}\n{traceback.format_exc()}"
+    print(f"ERROR in {request.url.path}:\n{error_detail}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": error_detail}
+    )
+
 
 # CORS middleware
 app.add_middleware(

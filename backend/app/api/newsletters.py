@@ -4,15 +4,26 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.models.digest import Digest
+from app.models.digest import Digest, DigestPaper
+from app.models.paper import Paper
 from app.models.schemas import NewsletterExportRequest, DigestStatus
 from app.composers.html_composer import HTMLComposer
 from app.composers.pdf_composer import PDFComposer
 from app.composers.markdown_composer import MarkdownComposer
 
 router = APIRouter()
+
+
+def _get_digest_query(digest_id: int):
+    """Get a query that eager-loads all related data for newsletter generation."""
+    return select(Digest).options(
+        selectinload(Digest.digest_papers)
+        .selectinload(DigestPaper.paper)
+        .selectinload(Paper.authors)
+    ).where(Digest.id == digest_id)
 
 
 @router.post("/{digest_id}/export")
@@ -22,7 +33,7 @@ async def export_newsletter(
     db: AsyncSession = Depends(get_db),
 ):
     """Export a digest as a newsletter in the specified format."""
-    result = await db.execute(select(Digest).where(Digest.id == digest_id))
+    result = await db.execute(_get_digest_query(digest_id))
     digest = result.scalar_one_or_none()
     
     if not digest:
@@ -68,16 +79,24 @@ async def preview_newsletter(
     db: AsyncSession = Depends(get_db),
 ):
     """Get HTML preview of the newsletter."""
-    result = await db.execute(select(Digest).where(Digest.id == digest_id))
-    digest = result.scalar_one_or_none()
-    
-    if not digest:
-        raise HTTPException(status_code=404, detail="Digest not found")
-    
-    composer = HTMLComposer()
-    content = await composer.compose(digest, for_preview=True)
-    
-    return Response(content=content, media_type="text/html")
+    import traceback
+    try:
+        result = await db.execute(_get_digest_query(digest_id))
+        digest = result.scalar_one_or_none()
+        
+        if not digest:
+            raise HTTPException(status_code=404, detail="Digest not found")
+        
+        composer = HTMLComposer()
+        content = await composer.compose(digest, for_preview=True)
+        
+        return Response(content=content, media_type="text/html")
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
+        print(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
 
 
 @router.post("/{digest_id}/send")
@@ -89,7 +108,7 @@ async def send_newsletter(
     """Send the newsletter via email."""
     from app.services.email_service import EmailService
     
-    result = await db.execute(select(Digest).where(Digest.id == digest_id))
+    result = await db.execute(_get_digest_query(digest_id))
     digest = result.scalar_one_or_none()
     
     if not digest:
@@ -109,3 +128,4 @@ async def send_newsletter(
     )
     
     return {"sent": len([r for r in results if r["success"]]), "failed": len([r for r in results if not r["success"]])}
+
