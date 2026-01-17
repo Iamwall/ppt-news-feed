@@ -1,0 +1,18 @@
+
+> science-digest-frontend@1.0.0 build
+> tsc && vite build
+
+src/components/StatusBadge.tsx(40,41): error TS2339: Property 'animate' does not exist on type '{ icon: LucideIcon; label: string; className: string; } | { icon: LucideIcon; label: string; className: string; animate: boolean; } | { icon: LucideIcon; label: string; className: string; animate: boolean; } | { ...; } | { ...; }'.
+src/pages/Dashboard.tsx(85,32): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/Dashboard.tsx(99,32): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/Dashboard.tsx(138,26): error TS7006: Parameter 'paper' implicitly has an 'any' type.
+src/pages/Dashboard.tsx(176,27): error TS7006: Parameter 'digest' implicitly has an 'any' type.
+src/pages/DigestDetail.tsx(100,44): error TS7006: Parameter 'dp' implicitly has an 'any' type.
+src/pages/DigestDetail.tsx(210,22): error TS7006: Parameter 'paper' implicitly has an 'any' type.
+src/pages/DigestDetail.tsx(210,29): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/pages/DigestDetail.tsx(286,38): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/pages/DigestDetail.tsx(286,43): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/pages/Digests.tsx(77,25): error TS7006: Parameter 'digest' implicitly has an 'any' type.
+src/pages/Papers.tsx(51,40): error TS7006: Parameter 'paper' implicitly has an 'any' type.
+src/pages/Papers.tsx(77,52): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/Papers.tsx(198,32): error TS7006: Parameter 'paper' implicitly has an 'any' type.

@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-ink-950 text-ink-100 antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-science-600 hover:bg-science-500 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 inline-flex items-center gap-2 shadow-lg shadow-science-600/20;
+  }
+  
+  .btn-secondary {
+    @apply bg-ink-800 hover:bg-ink-700 text-ink-100 font-medium px-4 py-2 rounded-lg transition-all duration-200 inline-flex items-center gap-2 border border-ink-700;
+  }
+  
+  .btn-danger {
+    @apply bg-accent-600 hover:bg-accent-500 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 inline-flex items-center gap-2;
+  }
+  
+  .card {
+    @apply bg-ink-900/80 backdrop-blur-sm rounded-xl border border-ink-800 shadow-xl;
+  }
+  
+  .input {
+    @apply w-full bg-ink-800 border border-ink-700 rounded-lg px-4 py-2.5 text-ink-100 placeholder:text-ink-500 focus:outline-none focus:ring-2 focus:ring-science-500 focus:border-transparent transition-all;
+  }
+  
+  .label {
+    @apply block text-sm font-medium text-ink-300 mb-1.5;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-success {
+    @apply badge bg-science-900/50 text-science-300 border border-science-700;
+  }
+  
+  .badge-warning {
+    @apply badge bg-yellow-900/50 text-yellow-300 border border-yellow-700;
+  }
+  
+  .badge-danger {
+    @apply badge bg-accent-900/50 text-accent-300 border border-accent-700;
+  }
+  
+  .badge-neutral {
+    @apply badge bg-ink-800 text-ink-300 border border-ink-700;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-ink-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-ink-700 rounded-full hover:bg-ink-600;
+}
+
+/* Animations */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animation-delay-100 { animation-delay: 100ms; }
+.animation-delay-200 { animation-delay: 200ms; }
+.animation-delay-300 { animation-delay: 300ms; }

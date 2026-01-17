@@ -1,0 +1,24 @@
+
+> science-digest-frontend@1.0.0 lint
+> eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
+
+
+C:\PPT NEWS FEED\frontend\src\components\CredibilityBadge.tsx
+  50:5  warning  'label' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\PPT NEWS FEED\frontend\src\pages\DigestDetail.tsx
+  5:3  warning  'Newspaper' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\PPT NEWS FEED\frontend\src\pages\Fetch.tsx
+  72:6  warning  React Hook useEffect has a missing dependency: 'jobStatus.data.papers_new'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\PPT NEWS FEED\frontend\src\pages\Papers.tsx
+  7:3  warning  'Filter' is defined but never used  @typescript-eslint/no-unused-vars
+  9:3  warning  'Trash2' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\PPT NEWS FEED\frontend\src\pages\Settings.tsx
+  5:15  warning  'SettingsIcon' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 6 problems (0 errors, 6 warnings)
+
+ESLint found too many warnings (maximum: 0).

@@ -1,0 +1,104 @@
+import axios from 'axios'
+
+const API_URL = import.meta.env.VITE_API_URL || '/api/v1'
+
+// Backend base URL for static files (images, etc.)
+// In development, the Vite proxy handles /static requests
+// In production, set VITE_BACKEND_URL to your backend server URL
+export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || ''
+
+// Helper to get full image URL
+export const getImageUrl = (imagePath: string | null | undefined): string | null => {
+  if (!imagePath) return null
+  // If it's already a full URL, return as-is
+  if (imagePath.startsWith('http')) return imagePath
+  // Otherwise, use the path directly (Vite proxy handles /static in dev)
+  return `${BACKEND_URL}${imagePath}`
+}
+
+export const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error.response?.data || error.message)
+    return Promise.reject(error)
+  }
+)
+
+// API functions
+export const papersApi = {
+  list: (params?: {
+    skip?: number
+    limit?: number
+    source?: string
+    min_credibility?: number
+  }) => api.get('/papers/', { params }),
+  
+  get: (id: number) => api.get(`/papers/${id}`),
+  
+  delete: (id: number) => api.delete(`/papers/${id}`),
+}
+
+export const digestsApi = {
+  list: (params?: { skip?: number; limit?: number; status?: string }) =>
+    api.get('/digests/', { params }),
+  
+  get: (id: number) => api.get(`/digests/${id}`),
+  
+  create: (data: {
+    name: string
+    paper_ids: number[]
+    ai_provider?: string
+    ai_model?: string
+    summary_style?: string
+    generate_images?: boolean
+  }) => api.post('/digests/', data),
+  
+  regenerate: (id: number) => api.post(`/digests/${id}/regenerate`),
+  
+  delete: (id: number) => api.delete(`/digests/${id}`),
+}
+
+export const fetchApi = {
+  start: (data: {
+    sources: string[]
+    keywords?: string[]
+    max_results?: number
+    days_back?: number
+  }) => api.post('/fetch/', data),
+  
+  status: (jobId: number) => api.get(`/fetch/status/${jobId}`),
+  
+  sources: () => api.get('/fetch/sources'),
+}
+
+export const newsletterApi = {
+  export: (digestId: number, format: 'html' | 'pdf' | 'markdown') =>
+    api.post(`/newsletters/${digestId}/export`, { format }, {
+      responseType: format === 'pdf' ? 'blob' : 'text',
+    }),
+  
+  preview: (digestId: number) =>
+    api.get(`/newsletters/${digestId}/preview`),
+  
+  send: (digestId: number, recipients: string[]) =>
+    api.post(`/newsletters/${digestId}/send`, { recipients }),
+}
+
+export const settingsApi = {
+  get: () => api.get('/settings/'),
+  
+  update: (data: Record<string, unknown>) => api.put('/settings/', data),
+  
+  getCredibilityWeights: () => api.get('/settings/credibility-weights'),
+  
+  updateCredibilityWeights: (data: Record<string, number>) =>
+    api.put('/settings/credibility-weights', data),
+}

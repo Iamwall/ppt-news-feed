@@ -1,0 +1,48 @@
+SOURCE DATA QUALITY REPORT
+============================================================
+
+Source                | Total | No Title | No Abstract | No Summary Headline
+---------------------------------------------------------------------------
+arxiv                 | 20    | 0        | 0           | 14
+pubmed                | 8     | 0        | 3           | 3
+
+
+PAPERS WITH MISSING ABSTRACTS:
+------------------------------------------------------------
+[pubmed] ID 4: Sheng Luan....
+    Journal: The New phytologist
+
+[pubmed] ID 5: Continuing Professional Development-Medical Imaging....
+    Journal: Journal of medical radiation sciences
+
+[pubmed] ID 6: Continuing Professional Development - Radiation Therapy....
+    Journal: Journal of medical radiation sciences
+
+
+
+SAMPLE FROM EACH SOURCE:
+============================================================
+
+--- ARXIV ---
+ID: 7
+Title: Emergence and transition of incompressible phases in decorated Landau levels...
+Abstract: We show a single Landau level (LL) dressed with periodic electrostatic potentials can realize a plet...
+Journal: arXiv:2601.10717
+
+ID: 8
+Title: WildRayZer: Self-supervised Large View Synthesis in Dynamic Environments...
+Abstract: We present WildRayZer, a self-supervised framework for novel view synthesis (NVS) in dynamic environ...
+Journal: arXiv:2601.10716
+
+
+--- PUBMED ---
+ID: 1
+Title: The psychology of health....
+Abstract: Online and offline, we are surrounded by recommendations on how to improve our health and extend our...
+Journal: Communications psychology
+
+ID: 2
+Title: Design and validation of the Intervention and Multiphase Training Transfer Asses...
+Abstract: Training transfer represents a crucial mechanism for understanding how occupational health psycholog...
+Journal: Journal of occupational health psychology
+

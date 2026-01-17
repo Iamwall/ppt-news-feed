@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(./venv/Scripts/python.exe -m pip install:*)",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(for pid in 30248 26924 34652 33056 41284 40688 34256 38956 18208 13636 40408)",
+      "Bash(do taskkill //F //PID $pid)",
+      "Bash(done)",
+      "Bash(taskkill /F /PID 29300)",
+      "Bash(taskkill //F //PID 29300)",
+      "Bash(timeout:*)",
+      "Bash(taskkill //F //PID 22492)",
+      "Bash(taskkill:*)",
+      "Bash(tasklist:*)",
+      "Bash(httpx get:*)",
+      "Bash(./venv/Scripts/alembic revision:*)",
+      "Bash(alembic revision:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(pip install:*)",
+      "Bash(ping:*)",
+      "Bash(copy /b \"c:\\\\PPT NEWS FEED\\\\backend\\\\app\\\\ai\\\\summarizer.py\" +,, \"c:\\\\PPT NEWS FEED\\\\backend\\\\app\\\\ai\\\\summarizer.py\")"
+    ]
+  }
+}

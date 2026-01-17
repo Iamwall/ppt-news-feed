@@ -1,0 +1,10 @@
+
+> science-digest-frontend@1.0.0 build
+> tsc && vite build
+
+src/pages/Dashboard.tsx(198,32): error TS2322: Type 'DigestStatus' is not assignable to type '"pending" | "processing" | "completed" | "failed" | "running"'.
+  Type '"created"' is not assignable to type '"pending" | "processing" | "completed" | "failed" | "running"'.
+src/pages/DigestDetail.tsx(112,26): error TS2322: Type 'DigestStatus' is not assignable to type '"pending" | "processing" | "completed" | "failed" | "running"'.
+  Type '"created"' is not assignable to type '"pending" | "processing" | "completed" | "failed" | "running"'.
+src/pages/Digests.tsx(112,32): error TS2322: Type 'DigestStatus' is not assignable to type '"pending" | "processing" | "completed" | "failed" | "running"'.
+  Type '"created"' is not assignable to type '"pending" | "processing" | "completed" | "failed" | "running"'.
