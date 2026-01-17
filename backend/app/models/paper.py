@@ -41,7 +41,21 @@ class Paper(Base):
     
     # Dates
     published_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)  # Original publish time for freshness
     fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    # Triage fields (AI pre-filtering)
+    triage_status: Mapped[Optional[str]] = mapped_column(String(20), default="pending", nullable=True)  # pending/passed/rejected
+    triage_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # 0.0-1.0 confidence
+    triage_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Why passed/rejected
+    triage_model: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # Model used for triage
+    triaged_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Breaking news / Live Pulse fields
+    is_breaking: Mapped[bool] = mapped_column(default=False)
+    breaking_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # 0.0-1.0 urgency
+    breaking_keywords: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)  # Detected trigger words
+    freshness_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # Time-decay score
     
     # Citation metrics
     citations: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)

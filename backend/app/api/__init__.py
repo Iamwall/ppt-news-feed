@@ -2,6 +2,7 @@
 from fastapi import APIRouter
 
 from app.api import papers, digests, settings as settings_routes, fetch, newsletters, demo, sources
+from app.api import schedules, pulse, websocket
 
 router = APIRouter()
 
@@ -12,3 +13,6 @@ router.include_router(fetch.router, prefix="/fetch", tags=["fetch"])
 router.include_router(newsletters.router, prefix="/newsletters", tags=["newsletters"])
 router.include_router(demo.router, prefix="/demo", tags=["demo"])
 router.include_router(sources.router, prefix="/sources", tags=["sources"])
+router.include_router(schedules.router, prefix="/schedules", tags=["schedules"])
+router.include_router(pulse.router, prefix="/pulse", tags=["pulse"])
+router.include_router(websocket.router, tags=["websocket"])

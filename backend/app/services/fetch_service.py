@@ -8,6 +8,7 @@ from sqlalchemy import select
 from app.models.paper import Paper, Author
 from app.models.fetch_job import FetchJob, FetchStatus
 from app.fetchers import get_fetcher, PaperData
+from app.services.triage_service import TriageService
 
 
 class FetchService:
@@ -43,23 +44,49 @@ class FetchService:
         keywords: Optional[List[str]],
         max_results: int,
         days_back: int,
+        enable_triage: bool = False,
+        triage_provider: Optional[str] = None,
+        triage_model: Optional[str] = None,
     ):
-        """Execute the fetch operation."""
+        """Execute the fetch operation.
+
+        Args:
+            job_id: Fetch job ID
+            sources: List of source IDs to fetch from
+            keywords: Optional keywords to filter
+            max_results: Maximum results to fetch
+            days_back: How many days back to look
+            enable_triage: If True, run AI triage on fetched papers (optional)
+            triage_provider: AI provider for triage (openai, anthropic, etc.)
+            triage_model: Specific model for triage (optional)
+        """
         # Get job
         result = await self.db.execute(select(FetchJob).where(FetchJob.id == job_id))
         job = result.scalar_one_or_none()
-        
+
         if not job:
             return
-        
+
         job.status = FetchStatus.RUNNING
         await self.db.commit()
-        
+
         errors = []
         papers_fetched = 0
         papers_new = 0
         papers_updated = 0
-        
+        papers_triaged = 0
+        papers_rejected = 0
+
+        # Initialize triage service if enabled
+        triage_service = None
+        if enable_triage:
+            triage_service = TriageService(
+                provider=triage_provider or "openai",
+                model=triage_model,
+                db=self.db
+            )
+            print(f"[Fetch] Triage enabled with {triage_provider or 'openai'}")
+
         try:
             # Fetch from each source
             for i, source in enumerate(sources):
@@ -90,11 +117,29 @@ class FetchService:
                                     await self._update_paper(existing, paper_data)
                                     papers_updated += 1
                                     print(f"[Fetch] Updated existing paper (ID: {existing.id})")
+
+                                    # Run triage on existing paper if enabled and not already triaged
+                                    if triage_service and existing.triage_status == "pending":
+                                        triage_result = await triage_service.triage_paper(existing)
+                                        papers_triaged += 1
+                                        if triage_result.verdict == "reject":
+                                            papers_rejected += 1
+                                            print(f"[Triage] Rejected: {triage_result.reason}")
                                 else:
                                     # Create new paper
                                     new_paper = await self._create_paper(paper_data)
                                     papers_new += 1
                                     print(f"[Fetch] Created new paper (ID: {new_paper.id})")
+
+                                    # Run triage on new paper if enabled
+                                    if triage_service:
+                                        triage_result = await triage_service.triage_paper(new_paper)
+                                        papers_triaged += 1
+                                        if triage_result.verdict == "reject":
+                                            papers_rejected += 1
+                                            print(f"[Triage] Rejected: {triage_result.reason}")
+                                        else:
+                                            print(f"[Triage] Passed (score: {triage_result.quality_score:.2f})")
                     except asyncio.TimeoutError:
                         error_msg = f"{source}: Timed out after 90 seconds (skipping)"
                         print(f"[Fetch Warning] {error_msg}")
@@ -106,7 +151,7 @@ class FetchService:
                     import traceback
                     traceback.print_exc()
                     errors.append(error_msg)
-            
+
             # Update job status
             job.status = FetchStatus.COMPLETED
             job.papers_fetched = papers_fetched
@@ -116,12 +161,15 @@ class FetchService:
             job.completed_at = datetime.now(timezone.utc)
             job.progress = 100
             job.current_source = None
-            
+
+            if enable_triage:
+                print(f"[Fetch] Triage summary: {papers_triaged} triaged, {papers_rejected} rejected")
+
         except Exception as e:
             job.status = FetchStatus.FAILED
             job.errors = [str(e)]
             job.completed_at = datetime.now(timezone.utc)
-        
+
         await self.db.commit()
     
     async def _find_existing_paper(self, paper_data: PaperData) -> Optional[Paper]:
@@ -226,10 +274,24 @@ async def execute_fetch_background(
     keywords: Optional[List[str]],
     max_results: int,
     days_back: int,
+    enable_triage: bool = False,
+    triage_provider: Optional[str] = None,
+    triage_model: Optional[str] = None,
 ):
-    """Execute fetch in background with a dedicated session."""
+    """Execute fetch in background with a dedicated session.
+
+    Args:
+        job_id: Fetch job ID
+        sources: List of source IDs
+        keywords: Optional keywords
+        max_results: Max results
+        days_back: Days back to look
+        enable_triage: Enable AI triage (optional, default False for backward compatibility)
+        triage_provider: AI provider for triage
+        triage_model: Specific model for triage
+    """
     from app.core.database import async_session_maker
-    
+
     async with async_session_maker() as session:
         service = FetchService(session)
         await service.run_fetch(
@@ -238,4 +300,7 @@ async def execute_fetch_background(
             keywords=keywords,
             max_results=max_results,
             days_back=days_back,
+            enable_triage=enable_triage,
+            triage_provider=triage_provider,
+            triage_model=triage_model,
         )

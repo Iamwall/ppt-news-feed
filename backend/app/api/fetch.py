@@ -16,9 +16,13 @@ async def fetch_papers(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
-    """Fetch papers from specified sources."""
+    """Fetch papers from specified sources.
+
+    Optionally enable AI triage to filter noise before saving.
+    Triage is disabled by default for backward compatibility.
+    """
     service = FetchService(db)
-    
+
     # Start fetch operation
     fetch_job = await service.start_fetch(
         sources=request.sources,
@@ -26,8 +30,8 @@ async def fetch_papers(
         max_results=request.max_results,
         days_back=request.days_back,
     )
-    
-    # Run fetch in background
+
+    # Run fetch in background (with optional triage)
     background_tasks.add_task(
         execute_fetch_background,
         fetch_job.id,
@@ -35,12 +39,16 @@ async def fetch_papers(
         request.keywords,
         request.max_results,
         request.days_back,
+        request.enable_triage,  # Optional triage
+        request.triage_provider,
+        request.triage_model,
     )
-    
+
+    triage_msg = " with AI triage" if request.enable_triage else ""
     return FetchResponse(
         job_id=fetch_job.id,
         status=FetchStatus.RUNNING,
-        message=f"Fetching from {len(request.sources)} sources",
+        message=f"Fetching from {len(request.sources)} sources{triage_msg}",
     )
 
 

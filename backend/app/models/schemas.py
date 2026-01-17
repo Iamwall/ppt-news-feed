@@ -148,6 +148,19 @@ class FetchRequest(BaseModel):
     )
     max_results: int = Field(default=50, ge=1, le=500)
     days_back: int = Field(default=7, ge=1, le=365)
+    # Triage options (optional, backward compatible)
+    enable_triage: bool = Field(
+        default=False,
+        description="Run AI triage to filter noise before saving"
+    )
+    triage_provider: Optional[str] = Field(
+        default="openai",
+        description="AI provider for triage (openai, anthropic, gemini, groq)"
+    )
+    triage_model: Optional[str] = Field(
+        default=None,
+        description="Specific model for triage (defaults to fast/cheap model)"
+    )
 
 
 class FetchResponse(BaseModel):

@@ -13,15 +13,19 @@ import {
   Cpu,
   Globe,
   Rss,
+  Calendar,
+  Radio,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useBranding } from '../contexts/BrandingContext'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/pulse', icon: Radio, label: 'Live Pulse' },
   { to: '/fetch', icon: Download, label: 'Fetch Papers' },
   { to: '/papers', icon: FileText, label: 'Papers' },
   { to: '/digests', icon: Newspaper, label: 'Digests' },
+  { to: '/schedules', icon: Calendar, label: 'Schedules' },
   { to: '/newsletters', icon: Mail, label: 'Newsletters' },
   { to: '/sources', icon: Rss, label: 'Sources' },
   { to: '/settings', icon: Settings, label: 'Settings' },

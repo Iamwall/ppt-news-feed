@@ -9,6 +9,8 @@ import NewsletterEditor from './pages/NewsletterEditor'
 import Settings from './pages/Settings'
 import Sources from './pages/Sources'
 import Fetch from './pages/Fetch'
+import Schedules from './pages/Schedules'
+import LivePulse from './pages/LivePulse'
 import { BrandingProvider } from './contexts/BrandingContext'
 
 function App() {
@@ -24,6 +26,8 @@ function App() {
           <Route path="newsletters" element={<Newsletters />} />
           <Route path="newsletters/:id/edit" element={<NewsletterEditor />} />
           <Route path="sources" element={<Sources />} />
+          <Route path="schedules" element={<Schedules />} />
+          <Route path="pulse" element={<LivePulse />} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
