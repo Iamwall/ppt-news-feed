@@ -11,6 +11,7 @@ import {
   Hash
 } from 'lucide-react'
 import { fetchApi } from '../api/client'
+import PdfUpload from '../components/PdfUpload'
 
 const SOURCES = [
   { id: 'pubmed', name: 'PubMed', description: 'Biomedical and life sciences' },
@@ -112,9 +113,12 @@ export default function Fetch() {
           Fetch Papers
         </h1>
         <p className="text-ink-400 mt-1">
-          Collect recent papers from scientific databases
+          Collect papers from scientific databases or upload your own PDFs
         </p>
       </div>
+      
+      {/* PDF Upload */}
+      <PdfUpload />
       
       {/* Status Card */}
       {/* Status Card */}

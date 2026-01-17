@@ -1,15 +1,96 @@
 """Paper-related API endpoints."""
+import uuid
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, HTTPException
+
+from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.models.paper import Paper
+from app.core.config import settings
+from app.models.paper import Paper, Author
+from app.services.pdf_extractor import pdf_extractor
 
 router = APIRouter()
+
+
+@router.post("/upload")
+async def upload_pdf(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload a PDF article and extract its content."""
+    # Validate file type
+    if not file.filename or not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    
+    if file.content_type and file.content_type != 'application/pdf':
+        raise HTTPException(status_code=400, detail="Invalid content type, expected application/pdf")
+    
+    # Create upload directory if needed
+    upload_dir = Path(settings.upload_dir) / "pdfs"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Save file with unique name
+    file_id = uuid.uuid4().hex[:12]
+    safe_filename = f"{file_id}_{file.filename.replace(' ', '_')}"
+    file_path = upload_dir / safe_filename
+    
+    try:
+        # Save uploaded file
+        content = await file.read()
+        with open(file_path, "wb") as f:
+            f.write(content)
+        
+        # Extract text and metadata
+        extracted = pdf_extractor.extract(file_path)
+        
+        # Create Paper record
+        paper = Paper(
+            title=extracted.title,
+            abstract=extracted.abstract,
+            source="upload",
+            source_id=file_id,
+            url=f"/uploads/pdfs/{safe_filename}",
+            published_date=extracted.published_date,
+            fetched_at=datetime.utcnow(),
+            is_preprint=False,
+            is_peer_reviewed=False,  # Unknown for uploads
+        )
+        
+        # Add authors
+        for author_name in extracted.authors[:10]:
+            author = Author(name=author_name)
+            paper.authors.append(author)
+        
+        db.add(paper)
+        await db.commit()
+        await db.refresh(paper)
+        
+        return {
+            "message": "PDF uploaded and processed successfully",
+            "paper": {
+                "id": paper.id,
+                "title": paper.title,
+                "abstract": paper.abstract[:200] + "..." if paper.abstract and len(paper.abstract) > 200 else paper.abstract,
+                "authors": [a.name for a in paper.authors],
+                "source": paper.source,
+            }
+        }
+        
+    except ValueError as e:
+        # Clean up file on extraction error
+        if file_path.exists():
+            file_path.unlink()
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        # Clean up file on any error
+        if file_path.exists():
+            file_path.unlink()
+        raise HTTPException(status_code=500, detail=f"Failed to process PDF: {str(e)}")
 
 
 def paper_to_dict(paper: Paper) -> dict:
