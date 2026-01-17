@@ -253,7 +253,7 @@ class HTMLComposer:
             border-top: 1px solid #e9ecef;
             font-size: 1.05rem;
             color: #495057;
-            text-align: center;
+            text-align: left;
         }
         
         .footer {
