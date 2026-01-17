@@ -9,6 +9,7 @@ from app.models.digest import Digest, DigestPaper, DigestStatus
 from app.ai.summarizer import Summarizer
 from app.ai.image_gen import ImageGenerator
 from app.analysis.credibility import CredibilityAnalyzer
+from app.services.domain_service import DomainService
 
 
 class DigestService:
@@ -78,10 +79,16 @@ class DigestService:
 
         try:
             print(f"[Digest] Initializing services for digest {digest_id}")
-            # Initialize services
+
+            # Get active domain configuration for context
+            domain_service = DomainService(self.db)
+            domain_config = await domain_service.get_active_domain()
+
+            # Initialize services with domain context
             summarizer = Summarizer(
                 provider=digest.ai_provider,
                 model=digest.ai_model,
+                domain_config=domain_config,
             )
             image_gen = ImageGenerator()
             credibility = CredibilityAnalyzer(self.db)

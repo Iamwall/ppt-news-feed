@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || '/api/v1'
+const API_URL = import.meta.env.VITE_API_URL || '/api/v1/'
 
 // Backend base URL for static files (images, etc.)
 // In development, the Vite proxy handles /static requests
@@ -39,18 +39,28 @@ export const papersApi = {
     limit?: number
     source?: string
     min_credibility?: number
-  }) => api.get('/papers/', { params }),
+  }) => api.get('papers/', { params }),
   
-  get: (id: number) => api.get(`/papers/${id}`),
+  get: (id: number) => api.get(`papers/${id}`),
   
-  delete: (id: number) => api.delete(`/papers/${id}`),
+  delete: (id: number) => api.delete(`papers/${id}`),
+  
+  upload: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('papers/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  }
 }
 
 export const digestsApi = {
   list: (params?: { skip?: number; limit?: number; status?: string }) =>
-    api.get('/digests/', { params }),
+    api.get('digests/', { params }),
   
-  get: (id: number) => api.get(`/digests/${id}`),
+  get: (id: number) => api.get(`digests/${id}`),
   
   create: (data: {
     name: string
@@ -59,11 +69,11 @@ export const digestsApi = {
     ai_model?: string
     summary_style?: string
     generate_images?: boolean
-  }) => api.post('/digests/', data),
+  }) => api.post('digests/', data),
   
-  regenerate: (id: number) => api.post(`/digests/${id}/regenerate`),
+  regenerate: (id: number) => api.post(`digests/${id}/regenerate`),
   
-  delete: (id: number) => api.delete(`/digests/${id}`),
+  delete: (id: number) => api.delete(`digests/${id}`),
 }
 
 export const fetchApi = {
@@ -72,36 +82,57 @@ export const fetchApi = {
     keywords?: string[]
     max_results?: number
     days_back?: number
-  }) => api.post('/fetch/', data),
+  }) => api.post('fetch/', data),
   
-  status: (jobId: number) => api.get(`/fetch/status/${jobId}`),
+  status: (jobId: number) => api.get(`fetch/status/${jobId}`),
   
-  sources: () => api.get('/fetch/sources'),
+  sources: () => api.get('fetch/sources'),
 }
 
 export const newsletterApi = {
   export: (digestId: number, format: 'html' | 'pdf' | 'markdown') =>
-    api.post(`/newsletters/${digestId}/export`, { format }, {
+    api.post(`newsletters/${digestId}/export`, { format }, {
       responseType: 'blob',
     }),
   
   preview: (digestId: number) =>
-    api.get(`/newsletters/${digestId}/preview`, {
+    api.get(`newsletters/${digestId}/preview`, {
       responseType: 'text',
       transformResponse: [(data) => data],  // Prevent JSON parsing
     }),
   
   send: (digestId: number, recipients: string[]) =>
-    api.post(`/newsletters/${digestId}/send`, { recipients }),
+    api.post(`newsletters/${digestId}/send`, { recipients }),
 }
 
 export const settingsApi = {
-  get: () => api.get('/settings/'),
-  
-  update: (data: Record<string, unknown>) => api.put('/settings/', data),
-  
-  getCredibilityWeights: () => api.get('/settings/credibility-weights'),
-  
+  get: () => api.get('settings/'),
+
+  update: (data: Record<string, unknown>) => api.put('settings/', data),
+
+  getCredibilityWeights: () => api.get('settings/credibility-weights'),
+
   updateCredibilityWeights: (data: Record<string, number>) =>
-    api.put('/settings/credibility-weights', data),
+    api.put('settings/credibility-weights', data),
+
+  getBranding: () => api.get('settings/branding'),
+
+  getDomains: () => api.get('settings/domains'),
+
+  setActiveDomain: (domainId: string) => api.put(`settings/domain/${domainId}`),
 }
+
+export const sourcesApi = {
+  list: () => api.get('sources/'),
+
+  create: (data: { name: string; url: string; description?: string }) =>
+    api.post('sources/', data),
+
+  update: (id: number, data: { name?: string; url?: string; description?: string; is_active?: boolean }) =>
+    api.put(`sources/${id}`, data),
+
+  delete: (id: number) => api.delete(`sources/${id}`),
+
+  test: (url: string) => api.post('sources/test', { url }),
+}
+

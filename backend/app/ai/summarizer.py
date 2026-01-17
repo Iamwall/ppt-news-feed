@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from app.ai.providers.base import get_ai_provider
 from app.models.paper import Paper
+from app.models.domain_config import DomainConfig
 
 
 @dataclass
@@ -19,23 +20,33 @@ class PaperSummary:
 class Summarizer:
     """AI-powered paper summarization service."""
 
-    def __init__(self, provider: str = "gemini", model: Optional[str] = None):
+    def __init__(self, provider: str = "gemini", model: Optional[str] = None, domain_config: Optional[DomainConfig] = None):
         self.provider = get_ai_provider(provider, model)
-    
+        self.domain_config = domain_config
+
     async def summarize(
         self,
         paper: Paper,
         style: str = "newsletter",
     ) -> PaperSummary:
         """Generate summary for a paper."""
-        
+
         style_instructions = self._get_style_instructions(style)
+
+        # Get domain-specific context
+        ai_role = "science communicator"
+        content_focus = "scientific research"
+        item_term = "paper"
+        if self.domain_config:
+            ai_role = self.domain_config.ai_role
+            content_focus = self.domain_config.content_focus
+            item_term = self.domain_config.item_terminology
 
         # Handle authors - could be list or set
         authors_list = list(paper.authors) if paper.authors else []
         authors_str = ", ".join(a.name for a in authors_list[:5]) if authors_list else "Unknown"
 
-        prompt = f"""Summarize this scientific paper for a newsletter audience.
+        prompt = f"""Summarize this {item_term} for a newsletter audience focused on {content_focus}.
 
 TITLE: {paper.title}
 
@@ -59,10 +70,10 @@ KEY_TAKEAWAY_3_LABEL: [Short catchy 2-5 word label for the third insight]
 KEY_TAKEAWAY_3_TEXT: [Third key insight - specific, actionable advice or fact the reader can apply to their life]
 TAGS: [comma-separated list of 3-5 topic tags]"""
 
-        system_prompt = """You are an expert science communicator who makes complex research accessible and applicable to daily life. 
-You write engaging, accurate summaries that capture the essence of scientific findings.
+        system_prompt = f"""You are an expert {ai_role} who makes complex {content_focus} accessible and applicable to daily life.
+You write engaging, accurate summaries that capture the essence of findings.
 Focus on practical utility: how can this knowledge improve the reader's life, health, or understanding of the world?
-Always maintain scientific accuracy while making content engaging for general audiences."""
+Always maintain accuracy while making content engaging for general audiences."""
 
         response = await self.provider.complete(
             prompt,
@@ -189,6 +200,15 @@ Focus on practical implications for daily life and wellness.""",
     ) -> tuple[str, str, str]:
         """Generate intro, connecting narrative, and conclusion for a digest."""
 
+        # Get domain-specific context
+        ai_role = "science communicator"
+        content_focus = "scientific research"
+        item_term_plural = "papers"
+        if self.domain_config:
+            ai_role = self.domain_config.ai_role
+            content_focus = self.domain_config.content_focus
+            item_term_plural = self.domain_config.item_terminology_plural
+
         # Get paper topics and headlines
         topics = []
         headlines = []
@@ -208,9 +228,9 @@ Focus on practical implications for daily life and wellness.""",
             for paper in papers if paper.summary_headline and paper.summary_takeaway
         ])
 
-        intro_prompt = f"""Write an introduction for a science digest newsletter called "{digest_name}".
+        intro_prompt = f"""Write an introduction for a digest newsletter called "{digest_name}" focused on {content_focus}.
 
-The digest covers {len(papers)} recent papers exploring: {topic_summary or "various scientific fields"}.
+The digest covers {len(papers)} recent {item_term_plural} exploring: {topic_summary or "various fields"}.
 
 Papers included:
 {papers_context}
@@ -225,7 +245,7 @@ FORMATTING RULES:
 
 The intro should feel like a friendly "Letter from the Editor" - warm, curious, and inviting."""
 
-        narrative_prompt = f"""Write a connecting narrative for a science newsletter with {len(papers)} research papers.
+        narrative_prompt = f"""Write a connecting narrative for a newsletter about {content_focus} with {len(papers)} {item_term_plural}.
 
 Papers and their findings:
 {papers_context}
@@ -240,9 +260,9 @@ FORMATTING RULES:
 
 Write in an engaging, conversational style that weaves the research together."""
 
-        conclusion_prompt = f"""Write a conclusion for this science digest newsletter.
+        conclusion_prompt = f"""Write a conclusion for this digest newsletter about {content_focus}.
 
-The newsletter covered {len(papers)} papers on: {topic_summary or "various scientific fields"}
+The newsletter covered {len(papers)} {item_term_plural} on: {topic_summary or "various topics"}
 
 Key insights from the papers:
 {papers_context}
@@ -285,19 +305,19 @@ CRITICAL FORMATTING RULES:
 
         intro = await self.provider.complete(
             intro_prompt,
-            system_prompt="You are a science communicator. NEVER use markdown: no *, no **, no ##, no italics. Write in plain text paragraphs only.",
+            system_prompt=f"You are a {ai_role}. NEVER use markdown: no *, no **, no ##, no italics. Write in plain text paragraphs only.",
             max_tokens=300,
         )
 
         narrative = await self.provider.complete(
             narrative_prompt,
-            system_prompt="You are a science communicator. NEVER use markdown: no *, no **, no ##. Write in plain text paragraphs only.",
+            system_prompt=f"You are a {ai_role}. NEVER use markdown: no *, no **, no ##. Write in plain text paragraphs only.",
             max_tokens=400,
         )
 
         conclusion = await self.provider.complete(
             conclusion_prompt,
-            system_prompt="You are a science communicator. NEVER use markdown symbols like ## or ** or *. Use plain text only. Follow the exact format in the prompt.",
+            system_prompt=f"You are a {ai_role}. NEVER use markdown symbols like ## or ** or *. Use plain text only. Follow the exact format in the prompt.",
             max_tokens=500,
         )
 

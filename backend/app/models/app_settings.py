@@ -9,9 +9,12 @@ from app.core.database import Base
 class AppSettings(Base):
     """Persistent application settings."""
     __tablename__ = "app_settings"
-    
+
     id: Mapped[int] = mapped_column(primary_key=True)
-    
+
+    # Domain selection
+    active_domain_id: Mapped[str] = mapped_column(String(50), default="science")
+
     # AI Provider settings
     default_ai_provider: Mapped[str] = mapped_column(String(50), default="openai")
     default_ai_model: Mapped[str] = mapped_column(String(100), default="gpt-4o")

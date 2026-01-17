@@ -1,18 +1,48 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
 import { useState, useEffect } from 'react'
-import { 
+import {
   Cpu,
   Image,
   Shield,
   Save,
-  Loader2
+  Loader2,
+  Globe,
+  FlaskConical,
+  Briefcase,
+  Heart,
+  Check,
 } from 'lucide-react'
 import { settingsApi } from '../api/client'
+import { useBranding, Domain } from '../contexts/BrandingContext'
+
+// Map domain IDs to icons
+const domainIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  science: FlaskConical,
+  tech: Cpu,
+  business: Briefcase,
+  health: Heart,
+  news: Globe,
+}
 
 export default function Settings() {
   const queryClient = useQueryClient()
-  
+  const { domains, activeDomainId, setActiveDomain, isLoading: brandingLoading } = useBranding()
+  const [changingDomain, setChangingDomain] = useState(false)
+
+  const handleDomainChange = async (domainId: string) => {
+    if (domainId === activeDomainId) return
+    setChangingDomain(true)
+    try {
+      await setActiveDomain(domainId)
+      toast.success('Domain changed successfully')
+    } catch {
+      toast.error('Failed to change domain')
+    } finally {
+      setChangingDomain(false)
+    }
+  }
+
   const { data: settingsData, isLoading } = useQuery({
     queryKey: ['settings'],
     queryFn: () => settingsApi.get(),
@@ -101,10 +131,63 @@ export default function Settings() {
           Settings
         </h1>
         <p className="text-ink-400 mt-1">
-          Configure AI providers, defaults, and credibility scoring
+          Configure domain, AI providers, defaults, and credibility scoring
         </p>
       </div>
-      
+
+      {/* Domain Switcher */}
+      <div className="card p-6">
+        <h2 className="font-medium text-ink-100 mb-2 flex items-center gap-2">
+          <Globe className="w-5 h-5 text-science-400" />
+          Content Domain
+        </h2>
+        <p className="text-sm text-ink-400 mb-6">
+          Choose the domain for your content aggregation and newsletter branding.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {domains.map((domain: Domain) => {
+            const DomainIcon = domainIcons[domain.id] || Globe
+            const isActive = domain.id === activeDomainId
+
+            return (
+              <button
+                type="button"
+                key={domain.id}
+                onClick={() => handleDomainChange(domain.id)}
+                disabled={changingDomain || brandingLoading}
+                className={`relative p-4 rounded-lg border-2 transition-all text-left ${
+                  isActive
+                    ? 'border-science-500 bg-science-500/10'
+                    : 'border-ink-700 hover:border-ink-500 bg-ink-800/50'
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute top-2 right-2">
+                    <Check className="w-5 h-5 text-science-400" />
+                  </div>
+                )}
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
+                  style={{ backgroundColor: `${domain.primary_color}20` }}
+                >
+                  <DomainIcon className="w-5 h-5" style={{ color: domain.primary_color }} />
+                </div>
+                <h3 className="font-medium text-ink-100">{domain.name}</h3>
+                <p className="text-xs text-ink-400 mt-1">{domain.description}</p>
+              </button>
+            )
+          })}
+        </div>
+
+        {changingDomain && (
+          <div className="mt-4 flex items-center gap-2 text-sm text-ink-400">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Switching domain...
+          </div>
+        )}
+      </div>
+
       {/* AI Settings */}
       <div className="card p-6">
         <h2 className="font-medium text-ink-100 mb-6 flex items-center gap-2">

@@ -24,18 +24,21 @@ export default function NewsletterEditor() {
   const [name, setName] = useState('')
   const [introText, setIntroText] = useState('')
   const [conclusionText, setConclusionText] = useState('')
-  const [showPreview, setShowPreview] = useState(false)
-  const [previewHtml, setPreviewHtml] = useState('')
   const [showSendModal, setShowSendModal] = useState(false)
   const [recipients, setRecipients] = useState('')
   
-  const { data, isLoading } = useQuery({
+  const { data: digest, isLoading } = useQuery<Digest>({
     queryKey: ['digest', id],
-    queryFn: () => digestsApi.get(Number(id)),
+    queryFn: () => digestsApi.get(Number(id)).then(res => res.data),
     enabled: !!id,
   })
-  
-  const digest = data?.data as Digest | undefined
+
+  // Integrated Preview query
+  const previewQuery = useQuery({
+    queryKey: ['newsletter-preview', id],
+    queryFn: () => newsletterApi.preview(Number(id)).then(res => res.data),
+    enabled: !!id,
+  })
   
   // Initialize form with digest data
   useEffect(() => {
@@ -48,10 +51,11 @@ export default function NewsletterEditor() {
   
   const updateMutation = useMutation({
     mutationFn: (updates: Record<string, string>) => 
-      api.put(`/digests/${id}`, updates),
+      api.put(`digests/${id}`, updates),
     onSuccess: () => {
       toast.success('Newsletter saved')
       queryClient.invalidateQueries({ queryKey: ['digest', id] })
+      queryClient.invalidateQueries({ queryKey: ['newsletter-preview', id] })
       queryClient.invalidateQueries({ queryKey: ['digests'] })
     },
     onError: () => {
@@ -59,36 +63,40 @@ export default function NewsletterEditor() {
     },
   })
   
-  const previewMutation = useMutation({
-    mutationFn: () => newsletterApi.preview(Number(id)),
-    onSuccess: (response) => {
-      setPreviewHtml(response.data)
-      setShowPreview(true)
-    },
-    onError: () => {
-      toast.error('Failed to load preview')
-    },
-  })
-  
   const exportMutation = useMutation({
     mutationFn: (format: 'html' | 'pdf' | 'markdown') => 
       newsletterApi.export(Number(id), format),
     onSuccess: (response, format) => {
-      // Response is already a blob
       const blob = response.data as Blob
+      
+      // Basic check if the blob is actually an error message
+      if (blob.size < 500 && blob.type.includes('application/json')) {
+        toast.error('Export failed: Server returned an error')
+        return
+      }
+
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
+      a.style.display = 'none'
       a.href = url
-      a.download = `newsletter_${id}.${format === 'markdown' ? 'md' : format}`
+      const extension = format === 'markdown' ? 'md' : format
+      a.download = `newsletter_${id}_${new Date().toISOString().split('T')[0]}.${extension}`
       document.body.appendChild(a)
       a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }, 100)
+      
       toast.success(`Exported as ${format.toUpperCase()}`)
     },
-    onError: () => {
-      toast.error('Export failed')
+    onError: (error: any) => {
+      console.error('Export Error:', error)
+      toast.error('Export failed: Network error or server failure')
     },
+
   })
   
   const sendMutation = useMutation({
@@ -98,6 +106,7 @@ export default function NewsletterEditor() {
       toast.success(`Sent to ${response.data.sent} recipients`)
       setShowSendModal(false)
       setRecipients('')
+
     },
     onError: () => {
       toast.error('Failed to send')
@@ -165,16 +174,16 @@ export default function NewsletterEditor() {
         
         <div className="flex items-center gap-2">
           <button
-            onClick={() => previewMutation.mutate()}
-            disabled={previewMutation.isPending}
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['newsletter-preview', id] })}
+            disabled={previewQuery.isFetching}
             className="btn-secondary"
           >
-            {previewMutation.isPending ? (
+            {previewQuery.isFetching ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Eye className="w-4 h-4" />
             )}
-            Preview
+            Refresh Preview
           </button>
           <button
             onClick={handleSave}
@@ -198,9 +207,9 @@ export default function NewsletterEditor() {
         </div>
       </div>
       
-      {/* Editor */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Left: Form */}
+      {/* Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        {/* Left: Editor */}
         <div className="space-y-6">
           <div className="card p-6">
             <label className="label">Newsletter Title</label>
@@ -221,9 +230,6 @@ export default function NewsletterEditor() {
               className="input min-h-[150px] resize-y"
               placeholder="Welcome to this week's digest..."
             />
-            <p className="text-xs text-ink-500 mt-2">
-              Opening message for your readers
-            </p>
           </div>
           
           <div className="card p-6">
@@ -234,90 +240,95 @@ export default function NewsletterEditor() {
               className="input min-h-[100px] resize-y"
               placeholder="That's all for this week..."
             />
-            <p className="text-xs text-ink-500 mt-2">
-              Closing remarks
-            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="card p-6">
+              <h3 className="font-medium text-ink-100 mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-science-400" />
+                Included Papers
+              </h3>
+              <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                {digest.digest_papers?.map((dp, i) => (
+                  <div 
+                    key={dp.paper?.id || i}
+                    className="p-3 bg-ink-800/50 rounded-lg border border-ink-700"
+                  >
+                    <p className="text-sm text-ink-200 font-medium line-clamp-2">
+                      {dp.paper?.title}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h3 className="font-medium text-ink-100 mb-4 flex items-center gap-2">
+                <Download className="w-5 h-5 text-science-400" />
+                Export
+              </h3>
+              <div className="space-y-3">
+                <button
+                  onClick={() => exportMutation.mutate('html')}
+                  disabled={exportMutation.isPending}
+                  className="btn-secondary w-full justify-center"
+                >
+                  HTML
+                </button>
+                <button
+                  onClick={() => exportMutation.mutate('pdf')}
+                  disabled={exportMutation.isPending}
+                  className="btn-secondary w-full justify-center"
+                >
+                  PDF
+                </button>
+                <button
+                  onClick={() => exportMutation.mutate('markdown')}
+                  disabled={exportMutation.isPending}
+                  className="btn-secondary w-full justify-center"
+                >
+                  Markdown
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         
-        {/* Right: Papers & Export */}
-        <div className="space-y-6">
-          <div className="card p-6">
-            <h3 className="font-medium text-ink-100 mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-science-400" />
-              Included Papers
-            </h3>
-            <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {digest.digest_papers?.map((dp, i) => (
-                <div 
-                  key={dp.paper?.id || i}
-                  className="p-3 bg-ink-800/50 rounded-lg border border-ink-700"
-                >
-                  <p className="text-sm text-ink-200 font-medium line-clamp-2">
-                    {dp.paper?.title}
-                  </p>
-                  {dp.paper?.summary_headline && (
-                    <p className="text-xs text-ink-400 mt-1 line-clamp-1">
-                      {dp.paper.summary_headline}
-                    </p>
-                  )}
-                </div>
-              ))}
+        {/* Right: Live Preview */}
+        <div className="sticky top-8">
+          <div className="card h-[calc(100vh-120px)] flex flex-col bg-white overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+              <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                <Eye className="w-5 h-5 text-gray-400" />
+                Integrated Preview
+              </h3>
+              {previewQuery.isFetching && (
+                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+              )}
             </div>
-          </div>
-          
-          <div className="card p-6">
-            <h3 className="font-medium text-ink-100 mb-4 flex items-center gap-2">
-              <Download className="w-5 h-5 text-science-400" />
-              Export
-            </h3>
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                onClick={() => exportMutation.mutate('html')}
-                disabled={exportMutation.isPending}
-                className="btn-secondary justify-center py-3"
-              >
-                HTML
-              </button>
-              <button
-                onClick={() => exportMutation.mutate('pdf')}
-                disabled={exportMutation.isPending}
-                className="btn-secondary justify-center py-3"
-              >
-                PDF
-              </button>
-              <button
-                onClick={() => exportMutation.mutate('markdown')}
-                disabled={exportMutation.isPending}
-                className="btn-secondary justify-center py-3"
-              >
-                Markdown
-              </button>
+            
+            <div className="flex-1 overflow-auto bg-gray-100 p-8">
+              {previewQuery.isLoading ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                  <Loader2 className="w-12 h-12 animate-spin mb-4" />
+                  <p>Loading preview...</p>
+                </div>
+              ) : previewQuery.isError ? (
+                <div className="flex flex-col items-center justify-center h-full text-red-500 p-8 text-center">
+                  <X className="w-12 h-12 mb-4" />
+                  <p className="font-medium">Failed to load preview</p>
+                  <p className="text-sm mt-2">Check backend status and try refreshing.</p>
+                </div>
+              ) : (
+                <div 
+                  className="bg-white shadow-lg mx-auto max-w-[800px] min-h-full"
+                  dangerouslySetInnerHTML={{ __html: previewQuery.data || '' }}
+                />
+              )}
             </div>
           </div>
         </div>
       </div>
-      
-      {/* Preview Modal */}
-      {showPreview && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-8">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-              <h3 className="font-medium text-gray-900">Newsletter Preview</h3>
-              <button
-                onClick={() => setShowPreview(false)}
-                className="p-2 hover:bg-gray-200 rounded-lg"
-              >
-                <X className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-            <div 
-              className="flex-1 overflow-auto p-4"
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
-            />
-          </div>
-        </div>
-      )}
       
       {/* Send Modal */}
       {showSendModal && (

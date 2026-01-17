@@ -13,6 +13,7 @@ from app.models.schemas import NewsletterExportRequest, DigestStatus
 from app.composers.html_composer import HTMLComposer
 from app.composers.pdf_composer import PDFComposer
 from app.composers.markdown_composer import MarkdownComposer
+from app.services.domain_service import DomainService
 
 router = APIRouter()
 
@@ -42,42 +43,47 @@ async def export_newsletter(
     """Export a digest as a newsletter in the specified format."""
     result = await db.execute(_get_digest_query(digest_id))
     digest = result.scalar_one_or_none()
-    
+
     if not digest:
         raise HTTPException(status_code=404, detail="Digest not found")
-    
+
     if digest.status != DigestStatus.COMPLETED:
         raise HTTPException(status_code=400, detail="Digest is not yet complete")
-    
+
     base_url = _get_base_url(fastapi_request)
-    
+
+    # Get active domain configuration for branding
+    domain_service = DomainService(db)
+    domain_config = await domain_service.get_active_domain()
+
     if request.format == "html":
         composer = HTMLComposer(base_url=base_url)
-        content = await composer.compose(digest)
+        content = await composer.compose(digest, domain_config=domain_config)
         return Response(
             content=content,
             media_type="text/html",
             headers={"Content-Disposition": f"attachment; filename=newsletter_{digest_id}.html"}
         )
-    
+
     elif request.format == "pdf":
         composer = PDFComposer(base_url=base_url)
-        pdf_path = await composer.compose(digest)
-        return FileResponse(
-            pdf_path,
+        pdf_bytes = await composer.compose(digest, domain_config=domain_config)
+        return Response(
+            content=pdf_bytes,
             media_type="application/pdf",
-            filename=f"newsletter_{digest_id}.pdf"
+            headers={"Content-Disposition": f"attachment; filename=newsletter_{digest_id}.pdf"}
         )
-    
+
+
     elif request.format == "markdown":
         composer = MarkdownComposer()
-        content = await composer.compose(digest)
+        content = await composer.compose(digest, domain_config=domain_config)
         return Response(
             content=content,
             media_type="text/markdown",
             headers={"Content-Disposition": f"attachment; filename=newsletter_{digest_id}.md"}
         )
-    
+
     else:
         raise HTTPException(status_code=400, detail="Unsupported format")
 
@@ -93,14 +99,19 @@ async def preview_newsletter(
     try:
         result = await db.execute(_get_digest_query(digest_id))
         digest = result.scalar_one_or_none()
-        
+
         if not digest:
             raise HTTPException(status_code=404, detail="Digest not found")
-        
+
         base_url = _get_base_url(fastapi_request)
+
+        # Get active domain configuration for branding
+        domain_service = DomainService(db)
+        domain_config = await domain_service.get_active_domain()
+
         composer = HTMLComposer(base_url=base_url)
-        content = await composer.compose(digest, for_preview=True)
-        
+        content = await composer.compose(digest, for_preview=True, domain_config=domain_config)
+
         return Response(content=content, media_type="text/html")
     except HTTPException:
         raise
@@ -119,24 +130,32 @@ async def send_newsletter(
 ):
     """Send the newsletter via email."""
     from app.services.email_service import EmailService
-    
+
     result = await db.execute(_get_digest_query(digest_id))
     digest = result.scalar_one_or_none()
-    
+
     if not digest:
         raise HTTPException(status_code=404, detail="Digest not found")
-    
+
     if digest.status != DigestStatus.COMPLETED:
         raise HTTPException(status_code=400, detail="Digest is not yet complete")
-    
+
     base_url = _get_base_url(fastapi_request)
+
+    # Get active domain configuration for branding
+    domain_service = DomainService(db)
+    domain_config = await domain_service.get_active_domain()
+
     composer = HTMLComposer(base_url=base_url)
-    html_content = await composer.compose(digest, for_email=True)
-    
+    html_content = await composer.compose(digest, for_email=True, domain_config=domain_config)
+
+    # Use domain-specific app name in email subject
+    app_name = domain_config.app_name if domain_config else "Science Digest"
+
     email_service = EmailService()
     results = await email_service.send_newsletter(
         recipients=recipients,
-        subject=f"Science Digest: {digest.name}",
+        subject=f"{app_name}: {digest.name}",
         html_content=html_content,
     )
     

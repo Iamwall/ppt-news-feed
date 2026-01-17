@@ -11,6 +11,7 @@ from app.models.schemas import (
     CredibilityWeightsResponse,
     CredibilityWeightsUpdateRequest,
 )
+from app.services.domain_service import DomainService
 
 router = APIRouter()
 
@@ -112,7 +113,7 @@ async def update_credibility_weights(
     
     await db.commit()
     await db.refresh(settings)
-    
+
     return CredibilityWeightsResponse(
         journal_impact_weight=settings.journal_impact_weight,
         author_hindex_weight=settings.author_hindex_weight,
@@ -121,3 +122,39 @@ async def update_credibility_weights(
         peer_review_weight=settings.peer_review_weight,
         citation_velocity_weight=settings.citation_velocity_weight,
     )
+
+
+# Domain/Branding endpoints
+
+@router.get("/branding")
+async def get_branding(db: AsyncSession = Depends(get_db)):
+    """Get current domain branding configuration for frontend."""
+    service = DomainService(db)
+    return await service.get_branding()
+
+
+@router.get("/domains")
+async def list_domains(db: AsyncSession = Depends(get_db)):
+    """List all available domains."""
+    service = DomainService(db)
+    domains = await service.list_domains()
+
+    # Seed defaults if no domains exist
+    if not domains:
+        await service.seed_default_domains()
+        domains = await service.list_domains()
+
+    return {
+        "domains": [d.to_branding_dict() for d in domains],
+    }
+
+
+@router.put("/domain/{domain_id}")
+async def set_active_domain(domain_id: str, db: AsyncSession = Depends(get_db)):
+    """Set the active domain."""
+    service = DomainService(db)
+    try:
+        domain = await service.set_active_domain(domain_id)
+        return domain.to_branding_dict()
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))

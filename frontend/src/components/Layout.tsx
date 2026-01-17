@@ -1,15 +1,21 @@
 import { Outlet, NavLink, Link } from 'react-router-dom'
-import { 
-  LayoutDashboard, 
-  FileText, 
-  Download, 
-  Settings, 
+import {
+  LayoutDashboard,
+  FileText,
+  Download,
+  Settings,
   Newspaper,
   Mail,
   FlaskConical,
-  Sparkles
+  Sparkles,
+  Briefcase,
+  Heart,
+  Cpu,
+  Globe,
+  Rss,
 } from 'lucide-react'
 import clsx from 'clsx'
+import { useBranding } from '../contexts/BrandingContext'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -17,10 +23,25 @@ const navItems = [
   { to: '/papers', icon: FileText, label: 'Papers' },
   { to: '/digests', icon: Newspaper, label: 'Digests' },
   { to: '/newsletters', icon: Mail, label: 'Newsletters' },
+  { to: '/sources', icon: Rss, label: 'Sources' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
+// Map domain IDs to icons
+const domainIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  science: FlaskConical,
+  tech: Cpu,
+  business: Briefcase,
+  health: Heart,
+  news: Globe,
+}
+
 export default function Layout() {
+  const { branding, activeDomainId } = useBranding()
+
+  // Get the appropriate icon for the active domain
+  const DomainIcon = activeDomainId ? (domainIcons[activeDomainId] || FlaskConical) : FlaskConical
+
   return (
     <div className="min-h-screen flex">
       {/* Sidebar */}
@@ -28,14 +49,20 @@ export default function Layout() {
         {/* Logo */}
         <div className="p-6 border-b border-ink-800">
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-science-500 to-science-700 flex items-center justify-center shadow-lg shadow-science-600/30">
-              <FlaskConical className="w-5 h-5 text-white" />
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+              style={{
+                background: `linear-gradient(to bottom right, ${branding?.primary_color || '#0984e3'}, ${branding?.secondary_color || '#6c5ce7'})`,
+                boxShadow: `0 10px 15px -3px ${branding?.primary_color || '#0984e3'}30`,
+              }}
+            >
+              <DomainIcon className="w-5 h-5 text-white" />
             </div>
             <div>
               <h1 className="font-display text-lg font-semibold text-ink-50 group-hover:text-science-400 transition-colors">
-                Science Digest
+                {branding?.app_name || 'Science Digest'}
               </h1>
-              <p className="text-xs text-ink-500">Research Aggregator</p>
+              <p className="text-xs text-ink-500">{branding?.tagline || 'Research Aggregator'}</p>
             </div>
           </Link>
         </div>

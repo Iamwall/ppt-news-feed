@@ -1,7 +1,7 @@
 """API routes initialization."""
 from fastapi import APIRouter
 
-from app.api import papers, digests, settings as settings_routes, fetch, newsletters, demo
+from app.api import papers, digests, settings as settings_routes, fetch, newsletters, demo, sources
 
 router = APIRouter()
 
@@ -11,3 +11,4 @@ router.include_router(settings_routes.router, prefix="/settings", tags=["setting
 router.include_router(fetch.router, prefix="/fetch", tags=["fetch"])
 router.include_router(newsletters.router, prefix="/newsletters", tags=["newsletters"])
 router.include_router(demo.router, prefix="/demo", tags=["demo"])
+router.include_router(sources.router, prefix="/sources", tags=["sources"])

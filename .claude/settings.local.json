@@ -22,7 +22,8 @@
       "Bash(powershell -Command:*)",
       "Bash(pip install:*)",
       "Bash(ping:*)",
-      "Bash(copy /b \"c:\\\\PPT NEWS FEED\\\\backend\\\\app\\\\ai\\\\summarizer.py\" +,, \"c:\\\\PPT NEWS FEED\\\\backend\\\\app\\\\ai\\\\summarizer.py\")"
+      "Bash(copy /b \"c:\\\\PPT NEWS FEED\\\\backend\\\\app\\\\ai\\\\summarizer.py\" +,, \"c:\\\\PPT NEWS FEED\\\\backend\\\\app\\\\ai\\\\summarizer.py\")",
+      "Bash(dir:*)"
     ]
   }
 }
