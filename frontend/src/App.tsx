@@ -4,6 +4,8 @@ import Dashboard from './pages/Dashboard'
 import Papers from './pages/Papers'
 import Digests from './pages/Digests'
 import DigestDetail from './pages/DigestDetail'
+import Newsletters from './pages/Newsletters'
+import NewsletterEditor from './pages/NewsletterEditor'
 import Settings from './pages/Settings'
 import Fetch from './pages/Fetch'
 
@@ -16,6 +18,8 @@ function App() {
         <Route path="fetch" element={<Fetch />} />
         <Route path="digests" element={<Digests />} />
         <Route path="digests/:id" element={<DigestDetail />} />
+        <Route path="newsletters" element={<Newsletters />} />
+        <Route path="newsletters/:id/edit" element={<NewsletterEditor />} />
         <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>

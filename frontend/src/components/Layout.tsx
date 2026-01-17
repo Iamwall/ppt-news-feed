@@ -5,6 +5,7 @@ import {
   Download, 
   Settings, 
   Newspaper,
+  Mail,
   FlaskConical,
   Sparkles
 } from 'lucide-react'
@@ -15,6 +16,7 @@ const navItems = [
   { to: '/fetch', icon: Download, label: 'Fetch Papers' },
   { to: '/papers', icon: FileText, label: 'Papers' },
   { to: '/digests', icon: Newspaper, label: 'Digests' },
+  { to: '/newsletters', icon: Mail, label: 'Newsletters' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 

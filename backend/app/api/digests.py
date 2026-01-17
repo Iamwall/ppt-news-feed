@@ -152,3 +152,33 @@ async def delete_digest(digest_id: int, db: AsyncSession = Depends(get_db)):
     
     await db.delete(digest)
     return {"message": "Digest deleted successfully"}
+
+
+@router.put("/{digest_id}")
+async def update_digest(
+    digest_id: int,
+    updates: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    """Update digest content for newsletter editing."""
+    result = await db.execute(
+        select(Digest).options(
+            selectinload(Digest.digest_papers).selectinload(DigestPaper.paper).selectinload(Paper.authors)
+        ).where(Digest.id == digest_id)
+    )
+    digest = result.scalar_one_or_none()
+    
+    if not digest:
+        raise HTTPException(status_code=404, detail="Digest not found")
+    
+    # Allowed editable fields
+    editable_fields = {"name", "intro_text", "conclusion_text", "connecting_narrative"}
+    
+    for field, value in updates.items():
+        if field in editable_fields:
+            setattr(digest, field, value)
+    
+    await db.commit()
+    await db.refresh(digest)
+    
+    return digest_to_dict(digest)
