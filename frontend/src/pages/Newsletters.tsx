@@ -7,7 +7,6 @@ import {
   Loader2,
   Edit3,
   Send,
-  Download,
   CheckCircle
 } from 'lucide-react'
 import { format } from 'date-fns'

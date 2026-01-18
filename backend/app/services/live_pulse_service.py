@@ -70,10 +70,16 @@ class LivePulseService:
         conditions = []
 
         # Filter by triage status
+        # When passed_triage_only is True, we show:
+        # - passed: explicitly passed triage
+        # - pending: not yet triaged (default for new papers)
+        # - None: legacy papers without triage status
+        # We only filter out "rejected" papers
         if passed_triage_only:
             conditions.append(
                 or_(
                     Paper.triage_status == "passed",
+                    Paper.triage_status == "pending",
                     Paper.triage_status == None  # Include non-triaged papers
                 )
             )
@@ -285,6 +291,7 @@ class LivePulseService:
             conditions.append(
                 or_(
                     Paper.triage_status == "passed",
+                    Paper.triage_status == "pending",
                     Paper.triage_status == None
                 )
             )

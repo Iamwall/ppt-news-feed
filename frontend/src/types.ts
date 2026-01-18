@@ -64,6 +64,18 @@ export interface Digest {
   summary_style?: string
 }
 
+export interface Source {
+  id: string
+  name: string
+  category: string
+  description?: string
+  type: string
+  requiresApiKey?: boolean
+  isCustom?: boolean
+  isEnabled?: boolean
+  url?: string
+}
+
 export interface ApiResponse<T> {
   data: T
   message?: string
@@ -72,7 +84,7 @@ export interface ApiResponse<T> {
 export interface PaginatedResponse<T> {
   items: T[]
   total: number
-  [key: string]: any
+  [key: string]: unknown
 }
 
 // Specific responses based on existing code usage
@@ -84,4 +96,9 @@ export interface PapersResponse {
 export interface DigestsResponse {
   digests: Digest[]
   total: number
+}
+
+export interface SourcesResponse {
+    sources: Source[]
+    domainId: string
 }

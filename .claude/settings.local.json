@@ -23,7 +23,11 @@
       "Bash(pip install:*)",
       "Bash(ping:*)",
       "Bash(copy /b \"c:\\\\PPT NEWS FEED\\\\backend\\\\app\\\\ai\\\\summarizer.py\" +,, \"c:\\\\PPT NEWS FEED\\\\backend\\\\app\\\\ai\\\\summarizer.py\")",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(for domain in tech business health news)",
+      "Bash(do echo \"=== $domain ===\")",
+      "Bash(start cmd /c \"python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000\")",
+      "Bash(start /B cmd /c \"python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 2>&1 > server.log\")"
     ]
   }
 }

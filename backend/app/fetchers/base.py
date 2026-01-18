@@ -94,3 +94,75 @@ class BaseFetcher(ABC):
         Override in subclasses to implement actual HTTP calls.
         """
         raise NotImplementedError
+
+
+@dataclass
+class NewsData:
+    """Standardized news item from any non-academic source."""
+    title: str
+    summary: Optional[str]
+    source: str
+    source_id: str
+    
+    # Optional fields
+    url: Optional[str] = None
+    published_date: Optional[datetime] = None
+    author: Optional[str] = None
+    category: str = "general"  # business, health, tech, science, general
+    
+    # Metadata
+    sentiment_score: Optional[float] = None
+    tags: List[str] = field(default_factory=list)
+    image_url: Optional[str] = None
+    
+    # Raw data for debugging
+    raw_data: Optional[dict] = field(default=None, repr=False)
+
+
+class BaseNewsFetcher(ABC):
+    """Base class for news/non-academic content fetchers."""
+    
+    source_name: str = "unknown"
+    category: str = "general"  # business, health, tech, science, general
+    rate_limit: float = 1.0  # Requests per second
+    requires_api_key: bool = False
+    
+    def __init__(self):
+        self._last_request_time = 0.0
+        self._lock = asyncio.Lock()
+    
+    async def _rate_limit(self):
+        """Enforce rate limiting between requests."""
+        async with self._lock:
+            now = asyncio.get_event_loop().time()
+            wait_time = (1.0 / self.rate_limit) - (now - self._last_request_time)
+            if wait_time > 0:
+                await asyncio.sleep(wait_time)
+            self._last_request_time = asyncio.get_event_loop().time()
+    
+    @abstractmethod
+    async def fetch(
+        self,
+        keywords: Optional[List[str]] = None,
+        max_results: int = 50,
+        days_back: int = 7,
+    ) -> AsyncIterator[NewsData]:
+        """Fetch news items from the source.
+        
+        Args:
+            keywords: Search keywords (optional, fetches recent if None)
+            max_results: Maximum number of items to fetch
+            days_back: How many days back to search
+            
+        Yields:
+            NewsData objects for each fetched item
+        """
+        pass
+    
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+    )
+    async def _make_request(self, *args, **kwargs):
+        """Make an HTTP request with retry logic."""
+        raise NotImplementedError

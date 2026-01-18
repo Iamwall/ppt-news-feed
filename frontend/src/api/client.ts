@@ -78,15 +78,18 @@ export const digestsApi = {
 
 export const fetchApi = {
   start: (data: {
-    sources: string[]
+    sources?: string[]
     keywords?: string[]
     max_results?: number
     days_back?: number
+    enable_triage?: boolean
   }) => api.post('fetch/', data),
   
   status: (jobId: number) => api.get(`fetch/status/${jobId}`),
+  getStatus: (jobId: number) => api.get(`fetch/status/${jobId}`),
   
   sources: () => api.get('fetch/sources'),
+  getSources: () => api.get('fetch/sources'),
 }
 
 export const newsletterApi = {
@@ -150,6 +153,8 @@ export const sourcesApi = {
 
   test: (id: number) => api.post(`sources/custom/${id}/test`),
 }
+
+
 
 export interface PulsePaper {
   id: number

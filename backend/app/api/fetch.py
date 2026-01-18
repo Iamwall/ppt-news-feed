@@ -63,103 +63,11 @@ async def get_fetch_status(job_id: int, db: AsyncSession = Depends(get_db)):
 @router.get("/sources")
 async def list_sources():
     """List available paper sources."""
+    # Import here to avoid circular dependencies if sources.py imports other things
+    # But checking sources.py, it looks clean. Ideally, we'd move BUILTIN_SOURCES to a shared config.
+    # For now, importing from app.api.sources is the most direct invalidation of the hardcoded list.
+    from app.api.sources import BUILTIN_SOURCES
+    
     return {
-        "sources": [
-            # Major research databases
-            {
-                "id": "pubmed",
-                "name": "PubMed",
-                "description": "Biomedical and life sciences literature",
-                "type": "database",
-                "requires_api_key": False,
-            },
-            {
-                "id": "arxiv",
-                "name": "arXiv",
-                "description": "Physics, math, CS, and biology preprints",
-                "type": "preprint",
-                "requires_api_key": False,
-            },
-            {
-                "id": "semantic_scholar",
-                "name": "Semantic Scholar",
-                "description": "Cross-discipline with citations (rate-limited without API key)",
-                "type": "database",
-                "requires_api_key": False,
-            },
-            # Preprint servers
-            {
-                "id": "biorxiv",
-                "name": "bioRxiv",
-                "description": "Biology preprints",
-                "type": "preprint",
-                "requires_api_key": False,
-            },
-            {
-                "id": "medrxiv",
-                "name": "medRxiv",
-                "description": "Medical and health sciences preprints",
-                "type": "preprint",
-                "requires_api_key": False,
-            },
-            # Open access journals
-            {
-                "id": "plos",
-                "name": "PLOS",
-                "description": "Public Library of Science open access journals",
-                "type": "journal",
-                "requires_api_key": False,
-            },
-            {
-                "id": "plos_biology_rss",
-                "name": "PLOS Biology",
-                "description": "PLOS Biology journal RSS feed",
-                "type": "journal_rss",
-                "requires_api_key": False,
-            },
-            # High-impact journal RSS feeds
-            {
-                "id": "nature_rss",
-                "name": "Nature",
-                "description": "Nature journal RSS feed (impact factor: 64.8)",
-                "type": "journal_rss",
-                "requires_api_key": False,
-            },
-            {
-                "id": "science_rss",
-                "name": "Science",
-                "description": "Science journal RSS feed (impact factor: 56.9)",
-                "type": "journal_rss",
-                "requires_api_key": False,
-            },
-            {
-                "id": "cell_rss",
-                "name": "Cell",
-                "description": "Cell journal RSS feed (impact factor: 66.8)",
-                "type": "journal_rss",
-                "requires_api_key": False,
-                "status": "unavailable",  # Currently blocked
-            },
-            {
-                "id": "lancet_rss",
-                "name": "The Lancet",
-                "description": "The Lancet medical journal RSS feed (impact factor: 202.7)",
-                "type": "journal_rss",
-                "requires_api_key": False,
-            },
-            {
-                "id": "nejm_rss",
-                "name": "NEJM",
-                "description": "New England Journal of Medicine RSS feed (impact factor: 176.1)",
-                "type": "journal_rss",
-                "requires_api_key": False,
-            },
-            {
-                "id": "bmj_rss",
-                "name": "BMJ",
-                "description": "British Medical Journal RSS feed (impact factor: 93.6)",
-                "type": "journal_rss",
-                "requires_api_key": False,
-            },
-        ]
+        "sources": list(BUILTIN_SOURCES.values())
     }

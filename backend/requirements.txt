@@ -49,3 +49,18 @@ lxml==5.1.0
 pytest==8.0.0
 pytest-asyncio==0.23.4
 httpx==0.26.0
+
+# Financial Data Sources
+yfinance>=0.2.35
+
+# Health Data Sources
+biopython>=1.83
+pymed>=0.8.9
+
+# News & Scraping
+newspaper3k>=0.2.8
+praw>=7.7.1
+
+# Research APIs
+habanero>=1.2.3
+

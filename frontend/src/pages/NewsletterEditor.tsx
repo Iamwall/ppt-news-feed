@@ -92,7 +92,7 @@ export default function NewsletterEditor() {
       
       toast.success(`Exported as ${format.toUpperCase()}`)
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('Export Error:', error)
       toast.error('Export failed: Network error or server failure')
     },

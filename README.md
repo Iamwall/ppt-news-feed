@@ -5,11 +5,12 @@ A full-stack application that aggregates scientific papers from multiple databas
 ## Features
 
 - **Multi-Source Aggregation**: Collect papers from PubMed, arXiv, bioRxiv, medRxiv, Semantic Scholar, and journal RSS feeds
+- **Live Pulse**: Real-time breaking news feed with automated urgency scoring and triage
 - **AI-Powered Summarization**: Generate concise, accessible summaries using OpenAI, Anthropic Claude, or local Ollama models
 - **Credibility Analysis**: Multi-factor scoring system evaluating journal impact, author h-index, methodology, and more
 - **Image Generation**: Create visual abstracts using Google Gemini Imagen or DALL-E 3
 - **Multiple Export Formats**: HTML email, PDF, and Markdown output
-- **Web Dashboard**: React-based interface for configuration, preview, and management
+- **Web Dashboard**: "Mint Modern" React-based interface for configuration, preview, and management
 - **Email Integration**: Send newsletters via SendGrid or SMTP
 
 ## Architecture

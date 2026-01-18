@@ -27,7 +27,7 @@ export default function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
       className: 'badge-warning',
       animate: true,
     },
-    // @ts-ignore - running might not be in DigestStatus but kept for safety
+    // @ts-expect-error - running might not be in DigestStatus but kept for safety
     running: { 
       icon: Loader2,
       label: 'Running',
@@ -48,7 +48,7 @@ export default function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
     },
   }
   
-  // @ts-ignore - indexing with explicit DigestStatus might fail if we access 'running' which is not in keyof
+  // @ts-expect-error - indexing with explicit DigestStatus might fail if we access 'running' which is not in keyof
   const { icon: Icon, label, className, animate } = config[status] || config.pending
   
   return (

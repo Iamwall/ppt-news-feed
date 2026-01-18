@@ -1,0 +1,64 @@
+"""Al Jazeera News RSS fetcher.
+
+No API key required.
+"""
+from datetime import datetime, timezone
+from typing import Optional, List, AsyncIterator
+import httpx
+import feedparser
+
+from app.fetchers.base import BaseNewsFetcher, NewsData
+
+
+class AlJazeeraFetcher(BaseNewsFetcher):
+    """Fetcher for Al Jazeera News."""
+    
+    source_name = "aljazeera"
+    category = "news"
+    rate_limit = 2.0
+    requires_api_key = False
+    
+    FEED_URL = "https://www.aljazeera.com/xml/rss/all.xml"
+    
+    async def fetch(
+        self,
+        keywords: Optional[List[str]] = None,
+        max_results: int = 50,
+        days_back: int = 7,
+    ) -> AsyncIterator[NewsData]:
+        """Fetch from Al Jazeera RSS."""
+        await self._rate_limit()
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(self.FEED_URL, timeout=30.0)
+            response.raise_for_status()
+        
+        feed = feedparser.parse(response.text)
+        
+        count = 0
+        for entry in feed.entries:
+            if count >= max_results:
+                break
+            
+            title = entry.get("title", "")
+            if not title:
+                continue
+            
+            if keywords and not any(kw.lower() in (title + " " + entry.get("summary", "")).lower() for kw in keywords):
+                continue
+            
+            pub_date = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc) if entry.get("published_parsed") else None
+            
+            yield NewsData(
+                title=title,
+                summary=entry.get("summary"),
+                source=self.source_name,
+                source_id=entry.get("id", ""),
+                url=entry.get("link"),
+                published_date=pub_date,
+                author="Al Jazeera",
+                category=self.category,
+                tags=["aljazeera", "world"],
+                raw_data={}
+            )
+            count += 1

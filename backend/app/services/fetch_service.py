@@ -8,16 +8,34 @@ from sqlalchemy import select
 from app.models.paper import Paper, Author
 from app.models.fetch_job import FetchJob, FetchStatus
 from app.models.custom_source import CustomSource
-from app.fetchers import get_fetcher, PaperData
+from app.fetchers import get_fetcher, PaperData, register_custom_source
 from app.services.triage_service import TriageService
+from app.services.live_pulse_service import live_pulse_notifier
 
 
 class FetchService:
     """Service for managing paper fetch operations."""
-    
+
     def __init__(self, db: AsyncSession):
         self.db = db
-    
+
+    async def _load_custom_sources(self):
+        """Load all custom sources into the fetcher registry."""
+        result = await self.db.execute(select(CustomSource).where(CustomSource.is_active == True))
+        custom_sources = result.scalars().all()
+
+        for cs in custom_sources:
+            register_custom_source(
+                source_id=cs.source_id,
+                url=cs.url,
+                name=cs.name,
+                is_validated=cs.is_validated,
+                is_peer_reviewed=cs.is_peer_reviewed,
+            )
+            print(f"[Fetch] Registered custom source: {cs.source_id}")
+
+        return custom_sources
+
     async def start_fetch(
         self,
         sources: List[str],
@@ -87,6 +105,9 @@ class FetchService:
                 db=self.db
             )
             print(f"[Fetch] Triage enabled with {triage_provider or 'openai'}")
+
+        # Load custom sources into registry
+        await self._load_custom_sources()
 
         try:
             # Fetch from each source
@@ -213,16 +234,17 @@ class FetchService:
                 is_preprint=paper_data.is_preprint,
             )
 
-            # Check if source is validated
-            if paper_data.source == "custom" and hasattr(paper_data, "source_id") and paper_data.source_id:
-                # Need to check custom source status
+            # Check if source is validated (custom sources start with 'custom_')
+            if paper_data.source.startswith("custom_"):
+                # Check custom source status in database
                 try:
                     result = await self.db.execute(
-                        select(CustomSource).where(CustomSource.source_id == paper_data.source_id)
+                        select(CustomSource).where(CustomSource.source_id == paper_data.source)
                     )
                     source = result.scalar_one_or_none()
                     if source and source.is_validated:
                         paper.is_validated_source = True
+                        print(f"[Fetch] Paper from validated source: {source.name}")
                 except Exception as e:
                     print(f"[Fetch Warning] Failed to check source validation: {e}")
 
@@ -239,6 +261,9 @@ class FetchService:
             self.db.add(paper)
             await self.db.commit()
             await self.db.refresh(paper)
+
+            # Notify real-time listeners
+            await live_pulse_notifier.notify(paper, event_type="new_item")
 
             return paper
         except Exception as e:
@@ -271,6 +296,9 @@ class FetchService:
                  pass
         
         await self.db.commit()
+        
+        # Notify real-time listeners
+        await live_pulse_notifier.notify(paper, event_type="updated")
     
     async def get_status(self, job_id: int) -> dict:
         """Get fetch job status."""
