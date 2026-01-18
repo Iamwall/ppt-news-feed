@@ -66,6 +66,7 @@ class FetchService:
         enable_triage: bool = False,
         triage_provider: Optional[str] = None,
         triage_model: Optional[str] = None,
+        domain_id: Optional[str] = None,
     ):
         """Execute the fetch operation.
 
@@ -78,6 +79,7 @@ class FetchService:
             enable_triage: If True, run AI triage on fetched papers (optional)
             triage_provider: AI provider for triage (openai, anthropic, etc.)
             triage_model: Specific model for triage (optional)
+            domain_id: Domain context for the fetch
         """
         # Get job
         result = await self.db.execute(select(FetchJob).where(FetchJob.id == job_id))
@@ -136,7 +138,7 @@ class FetchService:
 
                                 if existing:
                                     # Update existing paper
-                                    await self._update_paper(existing, paper_data)
+                                    await self._update_paper(existing, paper_data, domain_id)
                                     papers_updated += 1
                                     print(f"[Fetch] Updated existing paper (ID: {existing.id})")
 
@@ -149,7 +151,7 @@ class FetchService:
                                             print(f"[Triage] Rejected: {triage_result.reason}")
                                 else:
                                     # Create new paper
-                                    new_paper = await self._create_paper(paper_data)
+                                    new_paper = await self._create_paper(paper_data, domain_id)
                                     papers_new += 1
                                     print(f"[Fetch] Created new paper (ID: {new_paper.id})")
 
@@ -214,7 +216,7 @@ class FetchService:
         )
         return result.scalar_one_or_none()
     
-    async def _create_paper(self, paper_data: PaperData) -> Paper:
+    async def _create_paper(self, paper_data: PaperData, domain_id: Optional[str] = None) -> Paper:
         """Create a new paper from fetched data."""
         try:
             paper = Paper(
@@ -262,8 +264,8 @@ class FetchService:
             await self.db.commit()
             await self.db.refresh(paper)
 
-            # Notify real-time listeners
-            await live_pulse_notifier.notify(paper, event_type="new_item")
+            # Notify real-time listeners including domain context
+            await live_pulse_notifier.notify(paper, domain_id=domain_id, event_type="new_item")
 
             return paper
         except Exception as e:
@@ -273,7 +275,7 @@ class FetchService:
             await self.db.rollback()
             raise
     
-    async def _update_paper(self, paper: Paper, paper_data: PaperData):
+    async def _update_paper(self, paper: Paper, paper_data: PaperData, domain_id: Optional[str] = None):
         """Update existing paper with new data."""
         # Update fields that might have changed
         if paper_data.citations is not None:
@@ -297,8 +299,8 @@ class FetchService:
         
         await self.db.commit()
         
-        # Notify real-time listeners
-        await live_pulse_notifier.notify(paper, event_type="updated")
+        # Notify real-time listeners including domain context
+        await live_pulse_notifier.notify(paper, domain_id=domain_id, event_type="updated")
     
     async def get_status(self, job_id: int) -> dict:
         """Get fetch job status."""
@@ -331,6 +333,7 @@ async def execute_fetch_background(
     enable_triage: bool = False,
     triage_provider: Optional[str] = None,
     triage_model: Optional[str] = None,
+    domain_id: Optional[str] = None,
 ):
     """Execute fetch in background with a dedicated session.
 
@@ -343,6 +346,7 @@ async def execute_fetch_background(
         enable_triage: Enable AI triage (optional, default False for backward compatibility)
         triage_provider: AI provider for triage
         triage_model: Specific model for triage
+        domain_id: Domain context
     """
     from app.core.database import async_session_maker
 
@@ -357,4 +361,5 @@ async def execute_fetch_background(
             enable_triage=enable_triage,
             triage_provider=triage_provider,
             triage_model=triage_model,
+            domain_id=domain_id,
         )

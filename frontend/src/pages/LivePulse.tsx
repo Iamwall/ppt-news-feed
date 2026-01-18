@@ -86,7 +86,7 @@ export default function LivePulse() {
       const response = await api.get('/pulse/feed', {
         params: {
           domain_id: activeDomainId,
-          limit: 1000, 
+          limit: 200, 
           breaking_only: breakingOnly,
           passed_triage_only: true,
           validated_only: validatedOnly,

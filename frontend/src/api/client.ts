@@ -83,6 +83,7 @@ export const fetchApi = {
     max_results?: number
     days_back?: number
     enable_triage?: boolean
+    domain_id?: string
   }) => api.post('fetch/', data),
   
   status: (jobId: number) => api.get(`fetch/status/${jobId}`),

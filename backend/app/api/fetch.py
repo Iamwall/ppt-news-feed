@@ -42,6 +42,7 @@ async def fetch_papers(
         request.enable_triage,  # Optional triage
         request.triage_provider,
         request.triage_model,
+        request.domain_id,
     )
 
     triage_msg = " with AI triage" if request.enable_triage else ""

@@ -161,6 +161,10 @@ class FetchRequest(BaseModel):
         default=None,
         description="Specific model for triage (defaults to fast/cheap model)"
     )
+    domain_id: Optional[str] = Field(
+        default=None,
+        description="Domain context for the fetch operation"
+    )
 
 
 class FetchResponse(BaseModel):

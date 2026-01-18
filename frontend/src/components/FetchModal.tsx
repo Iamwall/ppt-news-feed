@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { fetchApi } from '../api/client'
-import { Loader2, X, DownloadCloud, Check } from 'lucide-react'
+import { Loader2, X, DownloadCloud, Check, Globe } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { useBranding } from '../contexts/BrandingContext'
 
 import { Source } from '../types'
 
@@ -12,9 +13,18 @@ interface FetchModalProps {
 }
 
 export function FetchModal({ isOpen, onClose }: FetchModalProps) {
+  const { domains, activeDomainId } = useBranding()
   const [selectedSources, setSelectedSources] = useState<string[]>([])
+  const [selectedDomain, setSelectedDomain] = useState<string | null>(activeDomainId)
   const [daysBack, setDaysBack] = useState(7)
   const [maxResults, setMaxResults] = useState(50)
+
+  // Sync selected domain with active domain when modal opens
+  useEffect(() => {
+    if (isOpen && activeDomainId) {
+        setSelectedDomain(activeDomainId)
+    }
+  }, [isOpen, activeDomainId])
 
   // Fetch available sources
   const { data: sourcesData, isLoading: isLoadingSources, isError, error } = useQuery({
@@ -47,6 +57,7 @@ export function FetchModal({ isOpen, onClose }: FetchModalProps) {
       sources: selectedSources,
       days_back: daysBack,
       max_results: maxResults,
+      domain_id: selectedDomain || undefined,
     })
   }
 
@@ -62,7 +73,7 @@ export function FetchModal({ isOpen, onClose }: FetchModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95">
         <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -76,6 +87,7 @@ export function FetchModal({ isOpen, onClose }: FetchModalProps) {
           <button
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -85,10 +97,11 @@ export function FetchModal({ isOpen, onClose }: FetchModalProps) {
           {/* Settings */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="days-back" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Days Back
               </label>
               <input
+                id="days-back"
                 type="number"
                 min="1"
                 max="30"
@@ -98,10 +111,11 @@ export function FetchModal({ isOpen, onClose }: FetchModalProps) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="max-results" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Max Results (per source)
               </label>
               <input
+                id="max-results"
                 type="number"
                 min="1"
                 max="100"
@@ -111,6 +125,31 @@ export function FetchModal({ isOpen, onClose }: FetchModalProps) {
               />
             </div>
           </div>
+
+          {/* Domain Selection */}
+          {domains.length > 0 && (
+            <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Target Domain
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                    {domains.map((domain) => (
+                        <button
+                            key={domain.id}
+                            onClick={() => setSelectedDomain(domain.id)}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${
+                                selectedDomain === domain.id
+                                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 ring-1 ring-blue-500/20'
+                                    : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'
+                            }`}
+                        >
+                            <Globe className="w-4 h-4" />
+                            {domain.name}
+                        </button>
+                    ))}
+                </div>
+            </div>
+          )}
 
           {/* Sources List */}
           <div>
@@ -132,7 +171,7 @@ export function FetchModal({ isOpen, onClose }: FetchModalProps) {
                     No sources available.
                 </div>
             ) : (
-                <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-1">
+                <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-1 custom-scrollbar">
                 {sourcesData?.data?.sources?.map((source: Source) => (
                     <button
                     key={source.id}

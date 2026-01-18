@@ -365,11 +365,17 @@ class LivePulseNotifier:
         """
         message = {
             "type": event_type,
-            "paper_id": paper.id,
-            "title": paper.title,
-            "is_breaking": paper.is_breaking,
-            "breaking_score": paper.breaking_score,
-            "freshness_score": paper.freshness_score,
+            "data": {
+                "paper_id": paper.id,
+                "title": paper.title,
+                "is_breaking": paper.is_breaking,
+                "breaking_score": paper.breaking_score,
+                "freshness_score": paper.freshness_score,
+                "url": paper.url,
+                "source": paper.source,
+                "published_date": paper.published_date.isoformat() if paper.published_date else None,
+                "fetched_at": paper.fetched_at.isoformat() if paper.fetched_at else None,
+            },
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
